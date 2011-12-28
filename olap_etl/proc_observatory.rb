@@ -22,10 +22,11 @@ FOAF_PRIMARY_TOPIC = 'http://xmlns.com/foaf/0.1/primaryTopic'
 
 
 def get_location( uri )
-#      response = RestClient.get( uri << 'about.rdf'  )
+  puts '=============================='
+  puts uri
   RDF::RDFXML::Reader.open( uri + 'about.rdf' ) do |reader|
     reader.each_statement do |stm|
-      puts stm.inspect
+#      puts stm.inspect
       case stm.predicate
       when PARENT_FEATURE
         #        get_location( stm.object.to_s )
