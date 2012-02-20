@@ -40,8 +40,8 @@ def main
         end
       end
     end
+    j = 1
     i = i + 1
-    sleep( 10 )
   end
 end
 
