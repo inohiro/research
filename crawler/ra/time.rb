@@ -18,26 +18,30 @@ def main
     Dir.mkdir( TIME_DIR )
   end
 
-  counter = 0
+  i = 1
+  j = 1
 
   Dir.glob( INPUT_DIR + '*.rdf' ) do |f|
+    puts f
     RDF::RDFXML::Reader.open( f ) do |reader|
       reader.each do |stm|
         if stm.predicate.to_s == TIME
           begin
             result = RestClient.get( stm.object.to_s, :timeout => 10 )
-            file_path = TIME_DIR + counter.to_s + '.rdf'
+            file_path = "#{TIME_DIR}#{i.to_s}_#{j.to_s}.rdf"
             open( file_path, 'w' ) do |f|
               f.write( result )
             end
           rescue => exp
             pp exp
           end
-          sec = Random.new.rand( 5..20 )
-          sleep( sec )
+          j = j + 1
+          sleep( 3 )
         end
       end
     end
+    i = i + 1
+    sleep( 10 )
   end
 end
 
