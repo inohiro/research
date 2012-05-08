@@ -9,12 +9,9 @@ require 'sequel'
 require 'uri'
 require 'pp'
 
-require './util.rb'
+require './../util.rb'
 
-BLACK_DOMAIN = [ "www.w3.org", "sws.geonames.org" ]
-TIME_INSTANT = "http://www.w3.org/2006/time#Instant"
 URI_TABLE_NAME = :uri_tablename
-
 BASE_DIR = '/Users/inohiro/Projects/LinkedSensorData/bill/rdf/'
 # BASE_DIR = '/Users/inohiro/Projects/LinkedSensorData/linkedsensordata/'
 # OBSERVATORY_PATH = "file:/Users/inohiro/Projects/rdf_rb/WSFO3_2005_8_26.n3"
@@ -135,7 +132,7 @@ def main
 #        puts "Object:       #{stm.object.to_s}"
       end
     rescue => ex
-      puts 'anything error happened'.upcase
+      puts 'something error occured'.upcase
       pp ex
       puts "COUNTER: #{@counter.to_s}"
       puts 'processing continue'.upcase
