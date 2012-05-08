@@ -6,7 +6,9 @@
 
 * data crawling scripts
 
-## olap_lte
+## olap_etl
+
+ * provide a solution to convert Linked Data to Relational database for analytical operation with typical OLAP system
 
 ### procidure
 
@@ -17,7 +19,7 @@
   *  create tables in horizontal representation
 
 * duplicator
-  * copy data from vertical table to horizontal one
+  * duplicate data from vertical table to horizontal one
 
 * generetadObservation_deleter
   * remove triple that has 'generatedObservation' as a predicate
