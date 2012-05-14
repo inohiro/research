@@ -8,6 +8,13 @@ INPUT_DIR = './outputs/'
 TIME_DIR = INPUT_DIR + 'time/'
 TIME = "http://purl.org/NET/c4dm/event.owl#time"
 
+# http://www.kanzaki.com/works/2011/stat/dim/d/20110330T00PT1H
+
+#
+#== main
+#
+# crawl observation time from crawled observed data
+#
 def main
 
   unless File.exists?( INPUT_DIR )
@@ -36,7 +43,7 @@ def main
             pp exp
           end
           j = j + 1
-          sleep( 3 )
+          sleep( Random.new.rand( 3..20 ) )
         end
       end
     end

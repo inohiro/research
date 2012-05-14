@@ -6,17 +6,23 @@ OUTPUT_DIR = './outputs/'
 BASE_URL = 'http://www.kanzaki.com/works/2011/stat/ra/'
 # http://www.kanzaki.com/works/2011/stat/ra/20110328/
 
+#
+#== main
+#
+# crawl observed radiational data
+# (1st March 2011 -> 31st December 2011)
+#
 def main
 
   unless File.exists?( OUTPUT_DIR )
     Dir::mkdir( OUTPUT_DIR )
   end
 
-  ( 3..12 ).each do |m|
+  ( 3..12 ).each do |m| # month
     span = ( 1..31 )
     case m when 4, 6, 9, 11 then span = ( 1..30 ) end
 
-    span.each do |d|
+    span.each do |d| # date
       date = '2011'
       if m < 10
         date = date + '0' + m.to_s
@@ -40,8 +46,7 @@ def main
       rescue => exp
         pp exp
       end
-      sec = Random.new.rand( 3..20 )
-      sleep( sec )
+      sleep( Random.new.rand( 3..20 ) )
     end
   end
 end
