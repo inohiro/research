@@ -17,6 +17,12 @@ get '/' do
   '/:id に GeoNames の ID をリクエストしてください'
 end
 
+#
+#== :id/feature.json
+#
+# return GeoNames RDF/XML Information
+# :id : GeoNames location id
+#
 get '/:id/feature.json' do
   content_type :json
 
@@ -29,6 +35,11 @@ end
 
 private
 
+#
+#== get_location
+#
+# create GeoNames layered structure as an Array recursively
+#
 def get_location( geonames_id )
   result = @geonames[:geonames_rdf].filter( :geonames_id => geonames_id )
   result.each do |r|

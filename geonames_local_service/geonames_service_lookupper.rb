@@ -8,6 +8,7 @@ require './../olap_etl/util.rb'
 
 @db
 GEONAMES_FEATURES = :geonames_features
+LOCAL_GEONAMES_SERVER = '127.0.0.1:4567'
 
 def create_table
   @db.create_table! GEONAMES_FEATURES do
@@ -34,6 +35,12 @@ def insert_info( subject, layers )
   @db[GEONAMES_FEATURES].insert( tuple )
 end
 
+#
+#== main
+#
+# Get GeoNames layered structure and insert it into MySQL
+# You have to set up local Web server (sinatra, run index.rb)
+#
 def main
   @db = Util.connect_db
 
