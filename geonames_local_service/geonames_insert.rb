@@ -1,10 +1,10 @@
 require 'rubygems'
 require 'sequel'
 
-require 'util.rb'
+require './../olap_etl/util.rb'
 
 @db
-GEONAMES_FILE = '/Users/inohiro/Downloads/all-geonames-rdf.txt'
+GEONAMES_FILE = 'all-geonames-rdf.txt'
 
 def main
   @db = Util.connect_geonames
@@ -21,7 +21,7 @@ def main
       else
         @db[table_name].insert( :geonames_id => geonames_id.to_i, :rdfxml => line )
       end
-      counter = counter + 1        
+      counter = counter + 1
     end
   end
 end

@@ -5,7 +5,7 @@ require 'rdf'
 require 'rdf/rdfxml'
 require 'json'
 
-require '../olap_etl/util.rb'
+require './../olap_etl/util.rb'
 
 @geonames
 @layers
