@@ -38,6 +38,70 @@ def vertical_explorer( object, table_name )
   return nil #=> リソースだけどデータセットに含まれていない
 end
 
+def recreate_table_with_relationships
+  puts "recreate horizontal table with relationships".upcase
+
+  foreign_queue = []
+
+  table_list = @db[:uri_tablename].all
+  table_list.each do |table|
+    table_name = ( 't' + table[:id].to_s + '_h' )
+    puts "Table: #{table_name}"
+
+    attributes = @db[:horizontal_infos].filter( :table_name => table_name )
+    relations = @db[:relation_infos].filter( :table_name => table_name )
+
+    index_columns = []
+    index_columns << :subject
+
+    neo_table_name = ( 'neo_' + table_name ).to_sym
+
+    begin
+      @db.create_table!( neo_table_name, { :engine => 'innodb' } ) do
+        String :subject,  { :primary_key => true, :null => false }
+        attributes.each do |a|
+          if a[:is_resource] # リソースだったら
+            column( a[:attribute_name], String ) # とりあえず追加しておく
+            index_columns << a[:attribute_name].to_sym # インデックスを作る
+            if !relations.empty?
+              relations.each do |r|
+                if r[:column_name] == a[:attribute_name] # 関係があればFKを設定
+                  foreign_queue << { :table_name => neo_table_name, # FK はあとで追加する
+                                     :column_name => a[:attribute_name],
+                                     :foreign_table => ( 'neo_' + r[:f_table_name] ).to_sym,
+                                     :foreign_column => :subject }
+                end
+              end
+            end
+          else # リソースでなければ，そのまま作る
+            column( a[:attribute_name], a[:data_type] == 'String' ? String : a[:data_type] )
+          end
+        end
+        index_columns.each do |c|
+          index c
+        end
+      end
+    rescue => exp
+      pp exp
+    end
+  end
+
+  puts 'add foreign key'.upcase
+  table_list.each do |table|
+    table_name = ( 'neo_t' + table[:id].to_s + '_h' )
+    puts "Table: #{table_name}"
+
+    foreign_queue.each do |q|
+      if q[:table_name].to_s == table_name
+        @db.alter_table( table_name.to_sym ) do
+           result = add_foreign_key( [q[:column_name].to_sym], q[:foreign_table].to_sym, :key => :subject )
+        end
+      end
+    end
+  end
+end
+
+
 def horizontal_explorer( object )
   table_list = @db[:uri_tablename].all
   table_list.each do |table|
@@ -83,6 +147,10 @@ def horizontal_main
   end
 end
 
+def recreate_horizontal_table
+  
+end
+
 # 外部リソースへのリンクは，テーブルだけ作成する（horizontal時）
 
 def create_table
@@ -94,7 +162,10 @@ def create_table
   end
 end
 
-def save_relation_info( table_name, column_name, f_table_name, f_column_name = 'subject' )
+def save_relation_info( table_name,
+                        column_name,
+                        f_table_name,
+                        f_column_name = 'subject' )
   @db[RELATION_INFOS_TABLE].insert( :table_name => table_name.to_s,
                                     :column_name => column_name.to_s,
                                     :f_table_name => f_table_name.to_s,
@@ -113,22 +184,23 @@ def vertical_main
 
     a_subject = @db[table_name].select( :subject ).distinct.first
     record = @db[table_name].filter( :subject => a_subject[:subject] )
-    record.each do |r|
-      if r[:value_type_id] == 1 && r[:predicate] != RDF.type
-        # さらに同一ホスト という条件を加える（正しい？
-        # まず1つ目だけ比較して，ホストが一緒か確認する．同じなら探す
-        object = r[:object]
-        result = vertical_explorer( object, table_name )
-        if result == nil
-          puts "relation not fount"
-        else
-          puts "result: #{result}"
+      record.each do |r|
+        if r[:value_type_id] == 1 && r[:predicate] != RDF.type
+          # さらに同一ホスト という条件を加える（正しい？
+          # まず1つ目だけ比較して，ホストが一緒か確認する．同じなら探す
+          object = r[:object]
+          result = vertical_explorer( object, table_name )
+          if result == nil
+            puts "relation not fount"
+          else
+            puts "result: #{result}"
+          end
+          puts
         end
-        puts
       end
     end
   end
 end
-end
 
 horizontal_main
+recreate_table_with_relationships

@@ -132,7 +132,7 @@ def main
 #        puts "Object:       #{stm.object.to_s}"
       end
     rescue => ex
-      puts 'something error occured'.upcase
+      puts 'something error has occured'.upcase
       pp ex
       puts "COUNTER: #{@counter.to_s}"
       puts 'processing continue'.upcase

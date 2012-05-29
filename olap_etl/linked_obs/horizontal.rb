@@ -14,6 +14,23 @@ require './../util.rb'
 #  その属性が URI であることが分かる必要がある
 #  その URI の rdf:type が分かる必要がある（実際には，どのテーブルかわかれば良い）
 
+def create_info_table
+  @db.create_table( :horizontal_infos, { :engine => 'innodb' } ) do
+    String :table_name
+    String :attribute_name
+    String :data_type
+    Boolean :is_resource
+  end
+end
+
+def save_table_info( tablename, attributes )
+  attributes.each do |a|
+    @db[:horizontal_infos].insert( :table_name => tablename,
+                                   :attribute_name => a[:name].to_s,
+                                   :data_type => a[:type].to_s,
+                                   :is_resource => a[:is_resource] )
+  end
+end
 
 def create_table( tablename, attributes )
   index_columns = []
@@ -23,13 +40,9 @@ def create_table( tablename, attributes )
     @db.create_table!( tablename, { :engine => 'innodb'} ) do
       String :subject
       attributes.each do |a|
-        if a[:type] == 'Boolean'
-          Boolean a[:name]
-        else
-          column( a[:name], a[:type] )
-          if a[:is_resource] == true
-            index_columns << a[:name].to_sym
-          end
+        column( a[:name], a[:type] )
+        if a[:is_resource] == true
+          index_columns << a[:name].to_sym
         end
       end
       index_columns.each do |c|
@@ -46,6 +59,8 @@ def main
   # 名前と，データタイプも得る（列名とデータ型を配列で持つ）
 
   @db = Util.connect_db
+  create_info_table
+
   table_list = @db[:uri_tablename].all
   table_list.each do |table|
     table_name = ( 't' +  table[:id].to_s ).to_sym
@@ -77,10 +92,10 @@ def main
         if n = /\#/.match( value_type ) # URI を解析
           if n.post_match =~ /float/
             data_type = Float
-          elsif n.post_match =~ /TruthData/
+          elsif n.post_match =~ /boolean/
             data_type = 'Boolean'
           elsif n.post_match =~ /dateTime/
-            data_type = String
+            data_type = DateTime # 時差の計算をしていない
           elsif n.post_match =~ /integer/
             data_type = Integer
           end
@@ -92,13 +107,16 @@ def main
         is_resource = true
       end
 
-      attributes << { :type => data_type, :name => column_name, :is_resource => is_resource }
+      attributes << { :type => data_type,
+                      :name => column_name,
+                      :is_resource => is_resource }
     end
     puts table_name
     h_table_name = table_name.to_s + '_h'
     pp attributes
     p '================================='
     create_table( h_table_name.to_sym, attributes )
+    savle_table_info
   end
 end
 
