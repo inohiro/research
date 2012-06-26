@@ -38,6 +38,36 @@ def vertical_explorer( object, table_name )
   return nil #=> リソースだけどデータセットに含まれていない
 end
 
+def vertical_main
+  @db = Util.connect_db( { :db => 'test' } )
+
+  table_list = @db[:uri_tablename].all
+  table_list.each do |table|
+    unless table[:id] == 2 || table[:id] == 9
+
+      table_name = ( 't' + table[:id].to_s ).to_sym
+      puts "Table: #{table_name.to_s}"
+
+    a_subject = @db[table_name].select( :subject ).distinct.first
+    record = @db[table_name].filter( :subject => a_subject[:subject] )
+      record.each do |r|
+        if r[:value_type_id] == 1 && r[:predicate] != RDF.type
+          # さらに同一ホスト という条件を加える（正しい？
+          # まず1つ目だけ比較して，ホストが一緒か確認する．同じなら探す
+          object = r[:object]
+          result = vertical_explorer( object, table_name )
+          if result == nil
+            puts "relation not fount"
+          else
+            puts "result: #{result}"
+          end
+          puts
+        end
+      end
+    end
+  end
+end
+
 def recreate_table_with_relationships
   puts "recreate horizontal table with relationships".upcase
 
@@ -102,19 +132,30 @@ def recreate_table_with_relationships
 end
 
 
-def horizontal_explorer( object )
+def horizontal_explorer( object, column_name, base_table )
   table_list = @db[:uri_tablename].all
   table_list.each do |table|
     current_table = ( 't' +  table[:id].to_s + '_h'  ).to_sym
 
-    sampling = @db[current_table].first
-    sampling_domain = URI.parse( sampling[:subject] ).host
+    unless current_table == base_table # pruning with table name
 
-    if sampling_domain == URI.parse( object ).host
-      @db[current_table].select( :subject ).each do |r|
-        subject = r[:subject]
-        if subject == object
-          return current_table
+      sampling = @db[current_table].first
+      sampling_domain = URI.parse( sampling[:subject] ).host
+
+      if sampling_domain == URI.parse( object ).host # pruning with URI's host name
+        @db[current_table].select( :subject ).each do |r|
+          subject = r[:subject]
+
+          one2one = false
+          if subject == object # there is a relationship
+            result = @db[base_table].filter( column_name => object )
+            if result.count >= 2 # 1 to many relationship
+              one2one = false
+            else # 1 to 1 relationship
+              one2one = true
+            end
+            return current_table, one2one
+          end
         end
       end
     end
@@ -136,10 +177,10 @@ def horizontal_main
       unless a[0].to_s == 'subject'
         object = a[1]
         if Util.valid_http_uri?( object )
-          result = horizontal_explorer( object )
+          result, one2one = horizontal_explorer( object, column_name, table_name )
           if result
             puts "save relationship: #{table_name.to_s}.#{a[0].to_s} with #{result}.subject"
-            save_relation_info( table_name, a[0], result )
+            save_relation_info( table_name, a[0], result, one2one )
           end
         end
       end
@@ -161,41 +202,13 @@ end
 def save_relation_info( table_name,
                         column_name,
                         f_table_name,
-                        f_column_name = 'subject' )
+                        f_column_name = 'subject',
+                        one2one )
   @db[RELATION_INFOS_TABLE].insert( :table_name => table_name.to_s,
                                     :column_name => column_name.to_s,
                                     :f_table_name => f_table_name.to_s,
-                                    :f_column_name => f_column_name )
-end
-
-def vertical_main
-  @db = Util.connect_db( { :db => 'test' } )
-
-  table_list = @db[:uri_tablename].all
-  table_list.each do |table|
-    unless table[:id] == 2 || table[:id] == 9
-
-      table_name = ( 't' + table[:id].to_s ).to_sym
-      puts "Table: #{table_name.to_s}"
-
-    a_subject = @db[table_name].select( :subject ).distinct.first
-    record = @db[table_name].filter( :subject => a_subject[:subject] )
-      record.each do |r|
-        if r[:value_type_id] == 1 && r[:predicate] != RDF.type
-          # さらに同一ホスト という条件を加える（正しい？
-          # まず1つ目だけ比較して，ホストが一緒か確認する．同じなら探す
-          object = r[:object]
-          result = vertical_explorer( object, table_name )
-          if result == nil
-            puts "relation not fount"
-          else
-            puts "result: #{result}"
-          end
-          puts
-        end
-      end
-    end
-  end
+                                    :f_column_name => f_column_name,
+                                    :id_one2one => one2one == true ? 1 : 0 )
 end
 
 horizontal_main
