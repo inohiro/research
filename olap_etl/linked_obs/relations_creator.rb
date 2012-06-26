@@ -147,10 +147,6 @@ def horizontal_main
   end
 end
 
-def recreate_horizontal_table
-  
-end
-
 # 外部リソースへのリンクは，テーブルだけ作成する（horizontal時）
 
 def create_table
