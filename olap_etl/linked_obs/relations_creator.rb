@@ -140,11 +140,7 @@ def create_table
   end
 end
 
-def save_relation_info( table_name,
-                        column_name,
-                        f_table_name,
-                        f_column_name = 'subject',
-                        one2one )
+def save_relation_info( table_name, column_name, f_table_name, f_column_name = 'subject', one2one )
   @db[RELATION_INFOS_TABLE].insert( :table_name => table_name.to_s,
                                     :column_name => column_name.to_s,
                                     :f_table_name => f_table_name.to_s,
