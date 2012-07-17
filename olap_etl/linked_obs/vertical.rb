@@ -49,19 +49,19 @@ def value_divider( object )
   end
 end
 
-def insert( stm, object_alt, type_id, datatype )
+def insert( stm, object_alt, type_id, datatype, table_id )
   begin
-    @db[tableid].insert( :subject => stm.subject.to_s,
-                         :predicate => stm.predicate.to_s,
-                         :object => object_alt || stm.object.to_s,
-                         :value_type_id => type_id.to_i,
-                         :value_type => datatype.to_s )
+    @db[table_id].insert( :subject => stm.subject.to_s,
+                          :predicate => stm.predicate.to_s,
+                          :object => object_alt || stm.object.to_s,
+                          :value_type_id => type_id.to_i,
+                          :value_type => datatype.to_s )
   rescue => ex
     puts '!!! unexpected insertion error !!!'.upcase
     puts ex.class
     puts ex.message
     puts ex.backtrace
-    puts "parameters: { stm => #{stm}, object_alt => #{object_alt}, type_id => #{type_id}, datatype => #{datatype}"
+    puts "parameters: { stm => #{stm}, object_alt => #{object_alt}, type_id => #{type_id}, datatype => #{datatype}, table_id => #{table_id} }"
   end
 end
 
@@ -73,7 +73,7 @@ def main
 
     path = "file:" + f.to_s
     tmp_subject =''
-    tableid = ''
+    table_id = ''
 
     begin
       graph = RDF::Graph.load( path )
@@ -98,7 +98,7 @@ def main
             end
 
             # table-id をゲットして，テーブルを見つける
-            tableid = ( 't' + result[:id][:id].to_s ).to_sym
+            table_id = ( 't' + result[:id][:id].to_s ).to_sym
 #          else
 #            puts '予期しないデータ構造'
           end
@@ -134,7 +134,7 @@ def main
           end
         end
 
-        insert( stm, object_alt, type_id, datatype, tableid )
+        insert( stm, object_alt, type_id, datatype, table_id )
 
 #        puts "Predicate:    #{stm.predicate.to_s}"
 #        puts "Object:       #{stm.object.to_s}"
