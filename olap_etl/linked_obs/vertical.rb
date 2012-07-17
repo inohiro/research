@@ -12,7 +12,8 @@ require 'pp'
 require './../util.rb'
 
 URI_TABLE_NAME = :uri_tablename
-BASE_DIR = '/Users/inohiro/Projects/LinkedSensorData/bill/rdf/'
+# BASE_DIR = '/home/inohiro/Data/rdf/'
+BASE_DIR = '/usr/local/share/data/linked_obs_bill/rdf/'
 # BASE_DIR = '/Users/inohiro/Projects/LinkedSensorData/linkedsensordata/'
 # OBSERVATORY_PATH = "file:/Users/inohiro/Projects/rdf_rb/WSFO3_2005_8_26.n3"
 # OBSERVATORY_PATH = "file:/Users/inohiro/Projects/rdf_rb/SNHUT_2004_8_11.n3"
@@ -30,14 +31,13 @@ def create_uri_tablename
 end
 
 def create_table( tablename )
-#  @db.create_table( tablename, { :engine => 'myisam' } ) do
-  @db.create_table( tablename, { :engine => 'innodb' } ) do
+  @db.create_table!( tablename, { :engine => 'innodb' } ) do
     String :subject
     String :predicate
     String :object
     String :value_type
     Integer :value_type_id
-    index :subject
+#    index :subject
   end
 end
 
@@ -66,7 +66,7 @@ def insert( stm, object_alt, type_id, datatype )
 end
 
 def main
-  @db = Util.connect_db
+  @db = Util.connect_db( { :db => 'bill' } )
   create_uri_tablename # initialize
 
   Dir.glob( BASE_DIR + "*.n3" ) do |f|
@@ -134,16 +134,17 @@ def main
           end
         end
 
-        insert( stm, object_alt, type_id, datatype )
+        insert( stm, object_alt, type_id, datatype, tableid )
 
 #        puts "Predicate:    #{stm.predicate.to_s}"
 #        puts "Object:       #{stm.object.to_s}"
       end
     rescue => ex
-      puts 'something error has occured'.upcase
-      pp ex
-      puts "COUNTER: #{@counter.to_s}"
-      puts 'processing continue'.upcase
+      puts '!!! something error has occured !!!'.upcase
+      puts ex.class
+      puts ex.message
+      puts ex.backtrace
+      puts "CURRENT COUNTER: #{@counter.to_s}"
     end
     puts "COUNTER: #{@counter.to_s}"
     @counter = @counter + 1
