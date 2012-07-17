@@ -87,6 +87,7 @@ def main
             # Linked Sensor/Observation Data はこれでいいけど，
             # 本来は全てのトリプルについて，predicate が rdf:type でないか
             # 見るべき（'a' を記述する順番は保証されてないはず）
+
             tablename = stm.object.to_s.gsub(/\s+/, "")
             result = @db[URI_TABLE_NAME].filter( :uri => tablename )
 
@@ -99,10 +100,9 @@ def main
 
             # table-id をゲットして，テーブルを見つける
             table_id = ( 't' + result[:id][:id].to_s ).to_sym
-#          else
-#            puts '予期しないデータ構造'
           end
         end
+
         # Literal / Resource 判定
         if stm.object.class == RDF::Literal
           type_id = 2 # Literal
