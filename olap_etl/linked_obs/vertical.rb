@@ -72,6 +72,7 @@ def main
   Dir.glob( BASE_DIR + "*.n3" ) do |f|
 
     path = "file:" + f.to_s
+    puts "loading...: #{path}"
     tmp_subject =''
     table_id = ''
 
