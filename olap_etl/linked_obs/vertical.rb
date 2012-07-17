@@ -50,11 +50,19 @@ def value_divider( object )
 end
 
 def insert( stm, object_alt, type_id, datatype )
-  @db[tableid].insert( :subject => stm.subject.to_s,
-                       :predicate => stm.predicate.to_s,
-                       :object => object_alt || stm.object.to_s,
-                       :value_type_id => type_id.to_i,
-                       :value_type => datatype.to_s )
+  begin
+    @db[tableid].insert( :subject => stm.subject.to_s,
+                         :predicate => stm.predicate.to_s,
+                         :object => object_alt || stm.object.to_s,
+                         :value_type_id => type_id.to_i,
+                         :value_type => datatype.to_s )
+  rescue => ex
+    puts '!!! unexpected insertion error !!!'.upcase
+    puts ex.class
+    puts ex.message
+    puts ex.backtrace
+    puts "parameters: { stm => #{stm}, object_alt => #{object_alt}, type_id => #{type_id}, datatype => #{datatype}"
+  end
 end
 
 def main
