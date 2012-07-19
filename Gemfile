@@ -2,7 +2,7 @@ source 'http://rubygems.org'
 
 gem 'mysql'
 gem 'sequel'
-gem 'nokogifi'
+gem 'nokogiri'
 gem 'rdf'
 gem 'rdf-n3'
 gem 'rdf-rdfxml'
