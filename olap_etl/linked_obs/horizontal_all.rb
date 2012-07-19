@@ -65,6 +65,8 @@ def main
     #   :value_type    =>"",
     #   :value_type_id => 1 }
 
+    table_name = 't' + rdf_type[:id].to_s + '_h'
+
     attributes = []
     result.each do |r|
       predicate = r[:predicate].to_s
@@ -76,8 +78,21 @@ def main
       column_name = ''
       is_resource = false
 
-      if m = /\#/.match( predicate ) # URI を解析，カラム名を得る
+      m = /\#/.match( predicate ) # URI を解析，カラム名を得る
+      if m != nil
         column_name = m.post_match
+      else
+        n = predicate.reverse.match( /\// )
+        if n != nil
+          column_name = n.pre_match.reverse
+        else
+          l = predicate.match( /http:\/\// )
+          if l != nil
+            column_name = l.post_match
+          else
+            column_name = Time.now.strftime( "unkown_%N" )
+          end
+        end
       end
 
       if value_id == 2 # Literal
@@ -103,12 +118,12 @@ def main
                       :name => column_name,
                       :is_resource => is_resource }
     end
+
     puts table_name
-    h_table_name = table_name.to_s + '_h'
     pp attributes
     p '================================='
-    create_table( h_table_name.to_sym, attributes )
-    savle_table_info
+    create_table( table_name.to_sym, attributes )
+    save_table_info( table_name, attributes )
   end
 end
 
