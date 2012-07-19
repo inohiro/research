@@ -122,10 +122,7 @@ def main
         end
 
         insert( tableid, stm, object_alt, type_id, datatype )
-        puts 'inserted'.upcase
 
-#        puts "Predicate:    #{stm.predicate.to_s}"
-#        puts "Object:       #{stm.object.to_s}"
       end
     rescue => ex
       puts 'something error has occured'.upcase
