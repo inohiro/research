@@ -7,15 +7,13 @@ require 'pp'
 
 require './../util.rb'
 
+ALL_RDF_TYPES = :all_rdf_types
+ALL_TRIPLES = :all_triples
+
 @db
 
-# 各 :subject に primary key をつける
-# URIとなっている属性は FK として扱うために，他テーブルと関係を作成する
-#  その属性が URI であることが分かる必要がある
-#  その URI の rdf:type が分かる必要がある（実際には，どのテーブルかわかれば良い）
-
 def create_info_table
-  @db.create_table( :horizontal_infos, { :engine => 'innodb' } ) do
+  @db.create_table!( :horizontal_infos, { :engine => 'innodb' } ) do
     String :table_name
     String :attribute_name
     String :data_type
@@ -55,19 +53,13 @@ def create_table( tablename, attributes )
 end
 
 def main
-  # テーブルごとに :predicate の DISTINCT を取得
-  # 名前と，データタイプも得る（列名とデータ型を配列で持つ）
-
-  @db = Util.connect_db
+  @db = Util.connect_db( { :db => 'ProteinDataBank_all' } )
   create_info_table
 
-  table_list = @db[:uri_tablename].all
-  table_list.each do |table|
-    table_name = ( 't' +  table[:id].to_s ).to_sym
-    puts "Table: #{table_name.to_s}"
-
-    # 述語の DISTINCT を取得
-    result = @db[table_name].select( :predicate, :value_type, :value_type_id ).distinct
+  @db[ALL_RDF_TYPES].each do |rdf_type|
+    all_subjects = []
+    @db[ALL_TRIPLES].select( :subject ).filter( :object => rdf_type[:uri].to_s ).each {|e| all_subjects << e[:subject] }
+    result = @db[ALL_TRIPLES].select( :predicate, :value_type, :value_type_id ).filter( [[ :subject, all_subjects ]] ).distinct
 
     # { :predicate     => "om-owl#samplingTime",
     #   :value_type    =>"",
