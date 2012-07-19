@@ -11,8 +11,10 @@ require 'pp'
 
 require './../util.rb'
 
-URI_TABLE_NAME = :uri_tablename
-BASE_DIR = '/home/inohiro/Data/rdf/'
+ALL_TRIPLES = :all_triples
+ALL_RDF_TYPES = :all_rdf_types
+
+BASE_DIR = '/usr/local/share/data/ProteinDataBank/'
 # BASE_DIR = '/Users/inohiro/Projects/LinkedSensorData/linkedsensordata/'
 # OBSERVATORY_PATH = "file:/Users/inohiro/Projects/rdf_rb/WSFO3_2005_8_26.n3"
 # OBSERVATORY_PATH = "file:/Users/inohiro/Projects/rdf_rb/SNHUT_2004_8_11.n3"
@@ -22,21 +24,17 @@ BASE_DIR = '/home/inohiro/Data/rdf/'
 @current_domain = nil
 @depth = 0
 
-def create_uri_tablename
-  @db.create_table!( URI_TABLE_NAME, { :engine => 'innodb' } ) do
-    primary_key :id
-    String :uri
-  end
-end
-
-def create_table( tablename )
-  @db.create_table!( tablename, { :engine => 'innodb' } ) do
+def initialize_tables
+  @db.create_table!( ALL_TRIPLES, { :engine => 'innodb' } ) do
     String :subject
     String :predicate
     String :object
     String :value_type
-    Integer :value_type_id
-#    index :subject
+    String :value_type_id
+  end
+  @db.create_table!( ALL_RDF_TYPES, { :engine => 'innodb' } ) do
+    primary_key :id
+    String :uri
   end
 end
 
@@ -48,9 +46,9 @@ def value_divider( object )
   end
 end
 
-def insert( stm, object_alt, type_id, datatype, table_id )
+def insert( stm, object_alt, type_id, datatype )
   begin
-    @db[table_id].insert( :subject => stm.subject.to_s,
+    @db[ALL_TRIPLES].insert( :subject => stm.subject.to_s,
                           :predicate => stm.predicate.to_s,
                           :object => object_alt || stm.object.to_s,
                           :value_type_id => type_id.to_i,
@@ -65,8 +63,8 @@ def insert( stm, object_alt, type_id, datatype, table_id )
 end
 
 def main
-  @db = Util.connect_db( { :db => 'bill' } )
-  create_uri_tablename # initialize
+  @db = Util.connect_db( { :db => 'ProteinDataBank_all' } )
+  initialize_tables # initialization
 
   Dir.glob( BASE_DIR + "*.n3" ) do |f|
 
@@ -78,33 +76,15 @@ def main
     begin
       graph = RDF::Graph.load( path )
       graph.each do |stm|
-        if tmp_subject != stm.subject.to_s # predicate の変わり目
-          tmp_subject = stm.subject.to_s
 
-          reuslt = nil
-          if stm.predicate == RDF.type
-            # predicate が rdf:type のとき，テーブルを確認，作る
-            # Linked Sensor/Observation Data はこれでいいけど，
-            # 本来は全てのトリプルについて，predicate が rdf:type でないか
-            # 見るべき（'a' を記述する順番は保証されてないはず）
-
-            tablename = stm.object.to_s.gsub(/\s+/, "")
-            result = @db[URI_TABLE_NAME].filter( :uri => tablename )
-
-            if result.count < 1 # 既にあるか確認する，なければ作る
-              @db[URI_TABLE_NAME].insert( :uri => tablename )
-              tablename_id = @db[URI_TABLE_NAME].order( :id ).last
-              table_symbol = ( 't' + tablename_id[:id].to_s ).to_sym
-              create_table( table_symbol )
-            end
-
-            # table-id をゲットして，テーブルを見つける
-            table_id = ( 't' + result[:id][:id].to_s ).to_sym
+        if stm.predicate == RDF.type
+          result = @db[ALL_RDF_TYPES].filter( :uri => stm.object.to_s )
+          if result.count < 1
+            @db[ALL_RDF_TYPES].insert( :uri => stm.object.to_s )
           end
         end
 
-        # Literal / Resource 判定
-        if stm.object.class == RDF::Literal
+        if stm.object.class == RDF::Literal # Literal / Resource 判定
           type_id = 2 # Literal
 
           if stm.object.has_datatype? # 識別可能なデータ型は利用する
@@ -124,20 +104,15 @@ def main
           type_id = 1 # Resource
           datatype = nil
 
-          # 同一ドメイン内のリソースを，再帰的に取得 => 今回はやらない
-          #      domain = URI.parse( stm.subject.to_s ).host
+          # ToDo: create domain list that to process specially
           forward_domain = URI.parse( stm.object.to_s ).host
-
           if forward_domain == 'sws.geonames.org'
             type_id = 3
             datatype = 'geonames'
           end
         end
 
-        insert( stm, object_alt, type_id, datatype, table_id )
-
-#        puts "Predicate:    #{stm.predicate.to_s}"
-#        puts "Object:       #{stm.object.to_s}"
+        insert( stm, object_alt, type_id, datatype )
       end
     rescue => ex
       puts '!!! something error has occured !!!'.upcase
