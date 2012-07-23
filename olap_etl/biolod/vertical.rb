@@ -46,11 +46,17 @@ def value_divider( object )
 end
 
 def insert( tableid, stm, object_alt, type_id, datatype )
-  @db[tableid].insert( :subject => stm.subject.to_s,
-                       :predicate => stm.predicate.to_s,
-                       :object => object_alt || stm.object.to_s,
-                       :value_type_id => type_id.to_i,
-                       :value_type => datatype.to_s )
+  begin
+    @db[tableid].insert( :subject => stm.subject.to_s,
+                         :predicate => stm.predicate.to_s,
+                         :object => object_alt || stm.object.to_s,
+                         :value_type_id => type_id.to_i,
+                         :value_type => datatype.to_s )
+  rescue => exp
+    puts '=== insertion error ==='.upcase
+    puts exp.message
+    puts exp.backtrace
+  end
 end
 def main
   @db = Util.connect_db( { :db => 'protein' } )
