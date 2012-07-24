@@ -74,4 +74,28 @@ class Util
   def self.valid_http_uri?( uri )
     URI.parse( uri ).scheme == 'http' rescue false
   end
+
+  #
+  #== Util.get_column_name
+  #
+  # estimate column name from predicate (argument)
+  #
+  def self.get_column_name( predicate )
+    m = /\#/.match( predicate )
+    if m != nil
+      m.post_match
+    else
+      n = predicate.reverse.match( /\// )
+      if n != nil
+        n.pre_match.reverse
+      else
+        l = predicate.match( /http:\/\// )
+        if l != nil
+          l.post_match
+        else
+          Time.now.strftime( "unknown_%N" )
+        end
+      end
+    end
+  end
 end

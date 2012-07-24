@@ -62,8 +62,14 @@ def main
 
   @db[ALL_RDF_TYPES].each do |rdf_type|
     all_subjects = []
-    @db[ALL_TRIPLES].select( :subject ).filter( :object => rdf_type[:uri].to_s ).each {|e| all_subjects << e[:subject] }
-    result = @db[ALL_TRIPLES].select( :predicate, :value_type, :value_type_id ).filter( [[ :subject, all_subjects ]] ).distinct
+
+    @db[ALL_TRIPLES].select( :subject )
+                    .filter( :object => rdf_type[:uri].to_s )
+                    .each {|e| all_subjects << e[:subject] }
+
+    result = @db[ALL_TRIPLES].select( :predicate, :value_type, :value_type_id )
+                             .filter( [[ :subject, all_subjects ]] )
+                             .distinct
 
     # { :predicate     => "om-owl#samplingTime",
     #   :value_type    =>"",
@@ -82,22 +88,7 @@ def main
       column_name = ''
       is_resource = false
 
-      m = /\#/.match( predicate ) # URI を解析，カラム名を得る
-      if m != nil
-        column_name = m.post_match
-      else
-        n = predicate.reverse.match( /\// )
-        if n != nil
-          column_name = n.pre_match.reverse
-        else
-          l = predicate.match( /http:\/\// )
-          if l != nil
-            column_name = l.post_match
-          else
-            column_name = Time.now.strftime( "unkown_%N" )
-          end
-        end
-      end
+      column_name = Util.get_column_name( predicate ) # estimate column name from predicate
 
       if value_id == 2 # Literal
         if n = /\#/.match( value_type ) # URI を解析

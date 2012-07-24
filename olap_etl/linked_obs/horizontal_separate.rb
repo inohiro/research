@@ -86,9 +86,7 @@ def main
       column_name = ''
       is_resource = false
 
-      if m = /\#/.match( predicate ) # URI を解析，カラム名を得る
-        column_name = m.post_match
-      end
+      column_name = Util.get_column_name( predicate ) # estimate column name from predicate
 
       if value_id == 2 # Literal
         if n = /\#/.match( value_type ) # URI を解析
