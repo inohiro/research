@@ -16,6 +16,8 @@ DATABASE_SCHEMA = 'mouse_mgi_gene'
 
 def create_info_table
   @db.create_table!( :horizontal_infos, { :engine => 'innodb' } ) do
+#    Integer :id
+    primary_key :id
     String :table_name
     String :attribute_name
     String :data_type

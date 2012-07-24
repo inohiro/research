@@ -16,6 +16,7 @@ require './../util.rb'
 
 def create_info_table
   @db.create_table( :horizontal_infos, { :engine => 'innodb' } ) do
+    primary_key :id
     String :table_name
     String :attribute_name
     String :data_type
