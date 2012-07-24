@@ -3,6 +3,7 @@ require 'rubygems'
 
 require 'sequel'
 require 'uri'
+require 'rdf'
 require 'pp'
 
 require './../util.rb'
@@ -65,6 +66,7 @@ def main
     all_subjects = []
 
     @db[ALL_TRIPLES].select( :subject )
+                    .filter( :predicate => RDF::type.to_s )
                     .filter( :object => rdf_type[:uri].to_s )
                     .each {|e| all_subjects << e[:subject] }
 
