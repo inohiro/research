@@ -14,7 +14,11 @@ require './../util.rb'
 ALL_TRIPLES = :all_triples
 ALL_RDF_TYPES = :all_rdf_types
 
-BASE_DIR = '/usr/local/share/data/ProteinDataBank/'
+# URI_TABLE_NAME = :uri_tablename
+BASE_DIR = '/usr/local/share/data/mouse_mgi_gene_physical_position/xml/'
+DATABASE_SCHEMA = 'mouse_mgi_gene'
+
+# BASE_DIR = '/usr/local/share/data/ProteinDataBank/'
 # BASE_DIR = '/Users/inohiro/Projects/LinkedSensorData/linkedsensordata/'
 # OBSERVATORY_PATH = "file:/Users/inohiro/Projects/rdf_rb/WSFO3_2005_8_26.n3"
 # OBSERVATORY_PATH = "file:/Users/inohiro/Projects/rdf_rb/SNHUT_2004_8_11.n3"
@@ -25,14 +29,14 @@ BASE_DIR = '/usr/local/share/data/ProteinDataBank/'
 @depth = 0
 
 def initialize_tables
-  @db.create_table!( ALL_TRIPLES, { :engine => 'innodb' } ) do
+  @db.create_table?( ALL_TRIPLES, { :engine => 'innodb' } ) do
     String :subject
     String :predicate
     String :object
     String :value_type
     String :value_type_id
   end
-  @db.create_table!( ALL_RDF_TYPES, { :engine => 'innodb' } ) do
+  @db.create_table?( ALL_RDF_TYPES, { :engine => 'innodb' } ) do
     primary_key :id
     String :uri
   end
@@ -49,10 +53,10 @@ end
 def insert( stm, object_alt, type_id, datatype )
   begin
     @db[ALL_TRIPLES].insert( :subject => stm.subject.to_s,
-                          :predicate => stm.predicate.to_s,
-                          :object => object_alt || stm.object.to_s,
-                          :value_type_id => type_id.to_i,
-                          :value_type => datatype.to_s )
+                             :predicate => stm.predicate.to_s,
+                             :object => object_alt || stm.object.to_s,
+                             :value_type_id => type_id.to_i,
+                             :value_type => datatype.to_s )
   rescue => ex
     puts '!!! unexpected insertion error !!!'.upcase
     puts ex.class
@@ -62,11 +66,14 @@ def insert( stm, object_alt, type_id, datatype )
   end
 end
 
+require 'pp'
+@current_stm
+
 def main
-  @db = Util.connect_db( { :db => 'ProteinDataBank_all' } )
+  @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
   initialize_tables # initialization
 
-  Dir.glob( BASE_DIR + "*.n3" ) do |f|
+  Dir.glob( BASE_DIR + "*.xml" ) do |f|
 
     path = "file:" + f.to_s
     puts "loading...: #{path}"
@@ -74,8 +81,18 @@ def main
     table_id = ''
 
     begin
-      graph = RDF::Graph.load( path )
+
+      # ToDO: It have to change for input file format
+
+#      graph = RDF::Graph.load( path )
+#      graph.each do |stm|
+
+#    graph = RDF::Reader.open( path )
+#      graph = RDF::Reader.for( :xml ).open( path )
+    graph = RDF::RDFXML::Reader.open( path )
       graph.each do |stm|
+
+      @current_stm = stm
 
         if stm.predicate == RDF.type
           result = @db[ALL_RDF_TYPES].filter( :uri => stm.object.to_s )
@@ -114,11 +131,11 @@ def main
 
         insert( stm, object_alt, type_id, datatype )
       end
+
     rescue => ex
       puts '!!! something error has occured !!!'.upcase
-      puts ex.class
+      pp @current_stm
       puts ex.message
-      puts ex.backtrace
       puts "CURRENT COUNTER: #{@counter.to_s}"
     end
     puts "COUNTER: #{@counter.to_s}"
