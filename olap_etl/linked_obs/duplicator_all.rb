@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 require 'rubygems'
 require 'sequel'
+require 'pp'
+require 'rdf'
 
 require './../util.rb'
 
+ALL_RDF_TYPES = :all_rdf_types
+ALL_TRIPLES = :all_triples
+DATABASE_SCHEMA = 'mouse_mgi_gene'
 @db
 
 def insert( table_name, tuple )
@@ -21,63 +26,69 @@ def main
   # データを移行する
   # subject が同じレコードを取得，hash を作ってデータを挿入
 
-  @db = Util.connect_db
-  table_list = @db[:uri_tablename].all
-  table_list.each do |table|
-    table_id = table[:id]
-    table_name = ( 't' + table_id.to_s ).to_sym
-    h_table_name = ( 't' + table_id.to_s + '_h' ).to_sym
+  @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
 
-    puts "Table:   #{table_name.to_s}"
-    puts "H-Table: #{h_table_name.to_s}"
+  @db[ALL_RDF_TYPES].each do |rdf_type|
+    puts "rdf_type: #{rdf_type}"
+    all_subjects = []
 
-    all_subjects = @db[table_name].select( :subject ).distinct
-    all_subjects.each do |e|
-      subject = e[:subject]
+    table_name = ( 't' + rdf_type[:id].to_s + '_h' ).to_sym
 
-      # 同一 Subject のレコードの集合
-      records = @db[table_name].filter( :subject => subject )
+    if @db.table_exists?( table_name )
+      @db[ALL_TRIPLES].select( :subject )
+        .filter( :predicate => RDF::type.to_s )
+        .filter( :object => rdf_type[:uri].to_s )
+        .each {|e| all_subjects << e }
 
-      tuple = Hash.new
-      tuple.store( 'subject', subject )
+      all_subjects.each do |e|
+        subject = e[:subject]
+        records = @db[ALL_TRIPLES].filter( :subject => subject )
+        
+        tuple = Hash.new
+        tuple.store( 'subject', subject )
 
-      records.each do |r|
-        column_name = ''
-        data_type = 'string'
-        real_value = nil
+        records.each do |r|
 
-        predicate = r[:predicate]
-        object = r[:object]
-        value_type = r[:value_type]
-        value_id = r[:value_type_id].to_i
+#          pp r
+#          gets
 
-        # データ型によって，キャストが必要（Float, Boolean, integer）
-        if m = /\#/.match( value_type )
-          if m.post_match =~ /float/
-            real_value = object.to_f
-          elsif m.post_match =~ /boolean/
-            real_value = object == 'true' ? true : false
-          elsif m.post_match =~ /integer/
-            real_value =~ /integer/
-            real_value = object.to_i
+          column_name = ''
+          data_type = 'string'
+          real_value = nil
+          
+          predicate = r[:predicate]
+          object = r[:object]
+          value_type = r[:value_type]
+          value_id = r[:value_type_id].to_i
+          
+          # データ型によって，キャストが必要（Float, Boolean, integer）
+          if m = /\#/.match( value_type )
+            if m.post_match =~ /float/
+              real_value = object.to_f
+            elsif m.post_match =~ /boolean/
+              real_value = object == 'true' ? true : false
+            elsif m.post_match =~ /integer/
+              real_value =~ /integer/
+              real_value = object.to_i
+            else
+              real_value = object
+            end
           else
             real_value = object
           end
-        else
-          real_value = object
+          
+          column_name = Util.get_column_name( predicate )
+          
+          if value_id == 3
+            column_name = 'geonames'
+          end
+          
+          tuple.store( column_name, real_value )
         end
-
-        if n = /\#/.match( predicate )
-          column_name = n.post_match
-        end
-
-        if value_id == 3
-          column_name = 'geonames'
-        end
-
-        tuple.store( column_name, real_value )
+        insert( table_name, tuple )
       end
-      insert( h_table_name, tuple )
+    else
+      puts "Table: #{table_name.to_s} does not exist."
     end
   end
 end
