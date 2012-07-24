@@ -7,7 +7,13 @@ require './../util.rb'
 @db
 
 def insert( table_name, tuple )
-  @db[table_name].insert( tuple )
+  begin
+    @db[table_name].insert( tuple )
+  rescue => exp
+    puts '!!! unexpected insertion error !!!'.upcase
+    puts exp.message
+    puts exp.backtrace
+  end
 end
 
 def main

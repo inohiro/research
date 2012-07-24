@@ -50,7 +50,9 @@ def create_table( tablename, attributes )
       end
     end
   rescue => exp
-    pp exp
+    puts '!!! unexpected insertion error !!!'.upcase
+    puts exp.message
+    puts exp.backtrace
   end
 end
 

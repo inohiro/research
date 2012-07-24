@@ -10,6 +10,8 @@ require './../util.rb'
 ALL_RDF_TYPES = :all_rdf_types
 ALL_TRIPLES = :all_triples
 
+DATABASE_SCHEMA = 'mouse_mgi_gene'
+
 @db
 
 def create_info_table
@@ -48,12 +50,14 @@ def create_table( tablename, attributes )
       end
     end
   rescue => exp
-    pp exp
+    puts '!!! unexpected insertion error !!!'.upcase
+    puts exp.message
+    puts exp.backtrace
   end
 end
 
 def main
-  @db = Util.connect_db( { :db => 'ProteinDataBank_all' } )
+  @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
   create_info_table
 
   @db[ALL_RDF_TYPES].each do |rdf_type|
@@ -107,9 +111,9 @@ def main
             data_type = Integer
           end
         end
-      elsif value_id == 3 # GeoNames
-        column_name = 'geonames'
-        data_type = String
+#      elsif value_id == 3 # GeoNames
+#        column_name = 'geonames'
+#        data_type = String
       elsif value_id == 1 # Resource
         is_resource = true
       end
