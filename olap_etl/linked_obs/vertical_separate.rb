@@ -2,6 +2,7 @@
 require 'rubygems'
 
 require 'rdf'
+require 'rdf/ntriples'
 require 'rdf/n3'
 require 'rdf/rdfxml'
 
@@ -12,8 +13,10 @@ require 'pp'
 require './../util.rb'
 
 URI_TABLE_NAME = :uri_tablename
+
+BASE_DIR = '/Users/inohiro/Projects/rdf_rb/'
 # BASE_DIR = '/home/inohiro/Data/rdf/'
-BASE_DIR = '/usr/local/share/data/linked_obs_bill/rdf/'
+# BASE_DIR = '/usr/local/share/data/linked_obs_bill/rdf/'
 # BASE_DIR = '/Users/inohiro/Projects/LinkedSensorData/linkedsensordata/'
 # OBSERVATORY_PATH = "file:/Users/inohiro/Projects/rdf_rb/WSFO3_2005_8_26.n3"
 # OBSERVATORY_PATH = "file:/Users/inohiro/Projects/rdf_rb/SNHUT_2004_8_11.n3"
@@ -77,8 +80,9 @@ def main
     table_id = ''
 
     begin
-      graph = RDF::Graph.load( path )
-      graph.each do |stm|
+      data = StringIO.open( File.read( f.to_s ))
+      reader = RDF::Reader.for( :n3 ).new( data )
+      reader.each do |stm|
         if tmp_subject != stm.subject.to_s # predicate の変わり目
           tmp_subject = stm.subject.to_s
 
