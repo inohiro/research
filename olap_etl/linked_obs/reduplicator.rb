@@ -4,7 +4,7 @@ require 'sequel'
 require './../util.rb'
 require 'pp'
 
-DATABASE_SCHEMA = 'mouse_mgi_gene'
+DATABASE_SCHEMA = 'mouse'
 RELATION_INFOS = :relation_infos
 
 @db
@@ -34,7 +34,6 @@ def duplicate( table_name )
     end
   end
   puts "#{table_name.to_s} completed"
-  gets
 end
 
 def search_rec( row )
