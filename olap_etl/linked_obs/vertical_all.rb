@@ -15,8 +15,8 @@ ALL_TRIPLES = :all_triples
 ALL_RDF_TYPES = :all_rdf_types
 
 # URI_TABLE_NAME = :uri_tablename
-BASE_DIR = '/usr/local/share/data/mouse_mgi_gene_physical_position/xml/'
-DATABASE_SCHEMA = 'mouse_mgi_gene'
+BASE_DIR = '/usr/local/share/data/mouse_mgi_gene/xml/'
+DATABASE_SCHEMA = 'mouse'
 
 # BASE_DIR = '/usr/local/share/data/ProteinDataBank/'
 # BASE_DIR = '/Users/inohiro/Projects/LinkedSensorData/linkedsensordata/'
@@ -74,7 +74,6 @@ def main
   initialize_tables # initialization
 
   Dir.glob( BASE_DIR + "*.xml" ) do |f|
-
     path = "file:" + f.to_s
     puts "loading...: #{path}"
     tmp_subject =''
@@ -101,35 +100,36 @@ def main
           end
         end
 
-        if stm.object.class == RDF::Literal # Literal / Resource 判定
+        if stm.object.class <= RDF::Literal # Literal / Resource 判定
           type_id = 2 # Literal
 
           if stm.object.has_datatype? # 識別可能なデータ型は利用する
-            datatype = stm.object.datatype
+            data_type = stm.object.class.to_s # like RDF::Literal::String
           else
             # 識別できないデータ型（今回は日時）については，別途分割
             object_alt = nil
             match = value_divider( stm.object.to_s )
             if match.empty?
-              datatype = RDF::XSD.string
+              data_type = 'RDF::Literal::String'
             else
               object_alt = match[0]
-              datatype = match[1]
+              data_type = match[1]
             end
           end
         elsif stm.object.class == RDF::URI
+
           type_id = 1 # Resource
-          datatype = nil
+          data_type = nil
 
           # ToDo: create domain list that to process specially
           forward_domain = URI.parse( stm.object.to_s ).host
           if forward_domain == 'sws.geonames.org'
             type_id = 3
-            datatype = 'geonames'
+            data_type = 'geonames'
           end
         end
 
-        insert( stm, object_alt, type_id, datatype )
+        insert( stm, object_alt, type_id, data_type )
       end
 
     rescue => ex

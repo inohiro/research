@@ -8,7 +8,7 @@ require './../util.rb'
 
 ALL_RDF_TYPES = :all_rdf_types
 ALL_TRIPLES = :all_triples
-DATABASE_SCHEMA = 'mouse_mgi_gene'
+DATABASE_SCHEMA = 'mouse'
 @db
 
 def insert( table_name, tuple )
@@ -48,9 +48,6 @@ def main
         tuple.store( 'subject', subject )
 
         records.each do |r|
-
-#          pp r
-#          gets
 
           column_name = ''
           data_type = 'string'

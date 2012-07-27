@@ -11,7 +11,7 @@ require './../util.rb'
 ALL_RDF_TYPES = :all_rdf_types
 ALL_TRIPLES = :all_triples
 
-DATABASE_SCHEMA = 'mouse_mgi_gene'
+DATABASE_SCHEMA = 'mouse'
 
 @db
 
@@ -94,20 +94,13 @@ def main
       column_name = Util.get_column_name( predicate ) # estimate column name from predicate
 
       if value_id == 2 # Literal
-        if n = /\#/.match( value_type ) # URI を解析
-          if n.post_match =~ /float/
-            data_type = Float
-          elsif n.post_match =~ /boolean/
-            data_type = 'Boolean'
-          elsif n.post_match =~ /dateTime/
-            data_type = DateTime # 時差の計算をしていない
-          elsif n.post_match =~ /integer/
-            data_type = Integer
-          end
-        end
+
+        data_type = Util.detect_data_type( value_type )
+
 #      elsif value_id == 3 # GeoNames
 #        column_name = 'geonames'
 #        data_type = String
+
       elsif value_id == 1 # Resource
         is_resource = true
       end
