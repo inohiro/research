@@ -7,7 +7,7 @@ require 'uri'
 
 @db
 
-DATABASE_SCHEMA = 'mouse_mgi_gene'
+DATABASE_SCHEMA = 'mouse'
 ALL_RDF_TYPES = :all_rdf_types
 URI_TABLE_NAME = ALL_RDF_TYPES
 RELATION_INFOS = :relation_infos
@@ -86,6 +86,9 @@ def horizontal_explorer( object, column_name, base_table )
     current_table = ( 't' +  table[:id].to_s + '_h'  ).to_sym
 
     if current_table != base_table && @db.table_exists?( current_table ) # pruning with table name
+
+      # 現在、サンプリングは1レコードしかやっていないので、
+      # 取得したレコードのすべてのカラムが、is null or empty でないかのチェックが必要
 
       sampling = @db[current_table].first
       sampling_domain = URI.parse( sampling[:subject] ).host
@@ -173,7 +176,7 @@ end
 def main
   @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
   
-#  horizontal_main
+  horizontal_main
   recreate_tables_with_relationships
 end
 
