@@ -1,6 +1,8 @@
 require 'rubygems'
 require 'sequel'
+require 'rdf'
 
+USER = ''
 PASSWORD = ''
 
 class Util
@@ -12,7 +14,7 @@ class Util
   #
   def self.connect_db( p )
 
-    user =     p[:user]     || 'root'
+    user =     p[:user]     || USER
     passwd =   p[:password] || PASSWORD
     host =     p[:host]     || 'localhost'
     db =       p[:db]       || 'test2'
@@ -98,4 +100,30 @@ class Util
       end
     end
   end
+
+  def self.detect_data_type( uri )
+
+    # xsd data type
+    # http://infohost.nmt.edu/tcc/help/pubs/rnc/xsd.html
+
+    case uri
+    when 'RDF::Literal::String'
+      String
+    when 'RDF::Literal::Boolean'
+      'Boolean'
+    when 'RDF::Literal::Date'
+      Date
+    when 'RDF::Literal::DateTime'
+      DateTime
+    when 'RDF::Literal::Double'
+      Float
+    when 'RDF::Literal::Int', 'RDF::Literal::Integer'
+      Integer
+    when 'RDf::Literal::Time'
+      Time
+    else
+      String
+    end
+  end
+
 end
