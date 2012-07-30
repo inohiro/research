@@ -7,20 +7,25 @@ require 'uri'
 
 @db
 
-RELATION_INFOS_TABLE = :relation_infos
+DATABASE_SCHEMA = 'mouse'
+ALL_RDF_TYPES = :all_rdf_types
+URI_TABLE_NAME = ALL_RDF_TYPES
+RELATION_INFOS = :relation_infos
+HORIZONTAL_INFOS = :horizontal_infos
 
-def recreate_table_with_relationships
+
+def recreate_tables_with_relationships
   puts "recreate horizontal table with relationships".upcase
 
   foreign_queue = []
 
-  table_list = @db[:uri_tablename].all
+  table_list = @db[URI_TABLE_NAME].all
   table_list.each do |table|
     table_name = ( 't' + table[:id].to_s + '_h' )
     puts "Table: #{table_name}"
 
-    attributes = @db[:horizontal_infos].filter( :table_name => table_name )
-    relations = @db[:relation_infos].filter( :table_name => table_name )
+    attributes = @db[HORIZONTAL_INFOS].filter( :table_name => table_name )
+    relations = @db[RELATION_INFOS].filter( :table_name => table_name )
 
     index_columns = []
     index_columns << :subject
@@ -53,19 +58,21 @@ def recreate_table_with_relationships
         end
       end
     rescue => exp
-      pp exp
+      puts '!!! unexpected create table error !!!'.upcase
+      puts exp.message
+#      puts exp.backtrace
     end
   end
 
   puts 'add foreign key'.upcase
   table_list.each do |table|
     table_name = ( 'neo_t' + table[:id].to_s + '_h' )
-    puts "Table: #{table_name}"
 
     foreign_queue.each do |q|
       if q[:table_name].to_s == table_name
         @db.alter_table( table_name.to_sym ) do
            result = add_foreign_key( [q[:column_name].to_sym], q[:foreign_table].to_sym, :key => :subject )
+          puts "add_foreign_key: #{table_name}.#{q[:column_name]} => #{q[:foreign_table]}.subject"
         end
       end
     end
@@ -74,11 +81,14 @@ end
 
 
 def horizontal_explorer( object, column_name, base_table )
-  table_list = @db[:uri_tablename].all
+  table_list = @db[URI_TABLE_NAME].all
   table_list.each do |table|
     current_table = ( 't' +  table[:id].to_s + '_h'  ).to_sym
 
-    unless current_table == base_table # pruning with table name
+    if current_table != base_table && @db.table_exists?( current_table ) # pruning with table name
+
+      # 現在、サンプリングは1レコードしかやっていないので、
+      # 取得したレコードのすべてのカラムが、is null or empty でないかのチェックが必要
 
       sampling = @db[current_table].first
       sampling_domain = URI.parse( sampling[:subject] ).host
@@ -105,23 +115,24 @@ def horizontal_explorer( object, column_name, base_table )
 end
 
 def horizontal_main
-  @db = Util.connect_db( { :db => 'test' } )
-
   create_table # create table for save relationship informations
 
-  table_list = @db[:uri_tablename].all
+  table_list = @db[URI_TABLE_NAME].all
   table_list.each do |table|
     table_name = ( 't' +  table[:id].to_s + '_h' ).to_sym
     puts "Table: #{table_name.to_s}"
 
-    @db[table_name].first.each do |a| # attributes.each
-      unless a[0].to_s == 'subject'
-        object = a[1]
-        if Util.valid_http_uri?( object )
-          result, one2one = horizontal_explorer( object, column_name, table_name )
-          if result
-            puts "save relationship: #{table_name.to_s}.#{a[0].to_s} with #{result}.subject"
-            save_relation_info( table_name, a[0], result, one2one )
+    if @db.table_exists?( table_name )
+      @db[table_name].first.each do |a| # attributes.each
+        column_name = a[0].to_s
+        object = a[1].to_s
+        unless column_name == 'subject'
+          if Util.valid_http_uri?( object )
+            result, one2one = horizontal_explorer( object, column_name, table_name )
+            if result
+              puts "save relationship: #{table_name.to_s}.#{column_name} with #{result}.subject"
+              save_relation_info( table_name, column_name, result, one2one )
+            end
           end
         end
       end
@@ -132,21 +143,41 @@ end
 # 外部リソースへのリンクは，テーブルだけ作成する（horizontal時）
 
 def create_table
-  @db.create_table!( RELATION_INFOS_TABLE, { :engine => 'innodb' } ) do
+  @db.create_table!( RELATION_INFOS, { :engine => 'innodb' } ) do
     column( :table_name, String, :null => false, :index => true )
     column( :column_name, String, :null => false )
     column( :f_table_name, String, :null => false )
     column( :f_column_name, String )
+    column( :is_one2one, 'Boolean' )
   end
 end
 
 def save_relation_info( table_name, column_name, f_table_name, f_column_name = 'subject', one2one )
-  @db[RELATION_INFOS_TABLE].insert( :table_name => table_name.to_s,
-                                    :column_name => column_name.to_s,
-                                    :f_table_name => f_table_name.to_s,
-                                    :f_column_name => f_column_name,
-                                    :id_one2one => one2one == true ? 1 : 0 )
+  begin
+    @db[RELATION_INFOS].insert( :table_name => table_name.to_s,
+                                :column_name => column_name.to_s,
+                                :f_table_name => f_table_name.to_s,
+                                :f_column_name => f_column_name,
+                                :is_one2one => one2one == true ? 1 : 0 )
+  rescue => exp
+    puts '!!! unexcepted insertion error !!!'.upcase
+    puts exp.message
+    puts exp.backtrace
+    puts <<EOS
+:parameters => { :table_name => #{table_name.to_s}, 
+                 :column_name => #{column_name.to_s}, 
+                 :f_table_name => #{f_table_name.to_s}, 
+                 :f_column_name => #{f_column_name.to_s}, 
+                 :one2one => #{one2one.to_s} }
+EOS
+  end
 end
 
-horizontal_main
-recreate_table_with_relationships
+def main
+  @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
+  
+  horizontal_main
+  recreate_tables_with_relationships
+end
+
+main

@@ -16,6 +16,7 @@ require './../util.rb'
 
 def create_info_table
   @db.create_table( :horizontal_infos, { :engine => 'innodb' } ) do
+    primary_key :id
     String :table_name
     String :attribute_name
     String :data_type
@@ -50,7 +51,9 @@ def create_table( tablename, attributes )
       end
     end
   rescue => exp
-    pp exp
+    puts '!!! unexpected insertion error !!!'.upcase
+    puts exp.message
+    puts exp.backtrace
   end
 end
 
@@ -84,9 +87,7 @@ def main
       column_name = ''
       is_resource = false
 
-      if m = /\#/.match( predicate ) # URI を解析，カラム名を得る
-        column_name = m.post_match
-      end
+      column_name = Util.get_column_name( predicate ) # estimate column name from predicate
 
       if value_id == 2 # Literal
         if n = /\#/.match( value_type ) # URI を解析

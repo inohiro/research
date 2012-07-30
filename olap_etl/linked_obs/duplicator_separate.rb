@@ -4,10 +4,17 @@ require 'sequel'
 
 require './../util.rb'
 
+DATABASE_SCHEMA = ''
 @db
 
 def insert( table_name, tuple )
-  @db[table_name].insert( tuple )
+  begin
+    @db[table_name].insert( tuple )
+  rescue => exp
+    puts '!!! unexpected insertion error !!!'.upcase
+    puts exp.message
+    puts exp.backtrace
+  end
 end
 
 def main
@@ -15,7 +22,8 @@ def main
   # データを移行する
   # subject が同じレコードを取得，hash を作ってデータを挿入
 
-  @db = Util.connect_db
+  @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
+
   table_list = @db[:uri_tablename].all
   table_list.each do |table|
     table_id = table[:id]

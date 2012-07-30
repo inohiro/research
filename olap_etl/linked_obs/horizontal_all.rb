@@ -3,6 +3,7 @@ require 'rubygems'
 
 require 'sequel'
 require 'uri'
+require 'rdf'
 require 'pp'
 
 require './../util.rb'
@@ -10,10 +11,13 @@ require './../util.rb'
 ALL_RDF_TYPES = :all_rdf_types
 ALL_TRIPLES = :all_triples
 
+DATABASE_SCHEMA = 'mouse'
+
 @db
 
 def create_info_table
   @db.create_table!( :horizontal_infos, { :engine => 'innodb' } ) do
+    primary_key :id
     String :table_name
     String :attribute_name
     String :data_type
@@ -48,18 +52,27 @@ def create_table( tablename, attributes )
       end
     end
   rescue => exp
-    pp exp
+    puts '!!! unexpected insertion error !!!'.upcase
+    puts exp.message
+    puts exp.backtrace
   end
 end
 
 def main
-  @db = Util.connect_db( { :db => 'ProteinDataBank_all' } )
+  @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
   create_info_table
 
   @db[ALL_RDF_TYPES].each do |rdf_type|
     all_subjects = []
-    @db[ALL_TRIPLES].select( :subject ).filter( :object => rdf_type[:uri].to_s ).each {|e| all_subjects << e[:subject] }
-    result = @db[ALL_TRIPLES].select( :predicate, :value_type, :value_type_id ).filter( [[ :subject, all_subjects ]] ).distinct
+
+    @db[ALL_TRIPLES].select( :subject )
+                    .filter( :predicate => RDF::type.to_s )
+                    .filter( :object => rdf_type[:uri].to_s )
+                    .each {|e| all_subjects << e[:subject] }
+
+    result = @db[ALL_TRIPLES].select( :predicate, :value_type, :value_type_id )
+                             .filter( [[ :subject, all_subjects ]] )
+                             .distinct
 
     # { :predicate     => "om-owl#samplingTime",
     #   :value_type    =>"",
@@ -78,38 +91,16 @@ def main
       column_name = ''
       is_resource = false
 
-      m = /\#/.match( predicate ) # URI を解析，カラム名を得る
-      if m != nil
-        column_name = m.post_match
-      else
-        n = predicate.reverse.match( /\// )
-        if n != nil
-          column_name = n.pre_match.reverse
-        else
-          l = predicate.match( /http:\/\// )
-          if l != nil
-            column_name = l.post_match
-          else
-            column_name = Time.now.strftime( "unkown_%N" )
-          end
-        end
-      end
+      column_name = Util.get_column_name( predicate ) # estimate column name from predicate
 
       if value_id == 2 # Literal
-        if n = /\#/.match( value_type ) # URI を解析
-          if n.post_match =~ /float/
-            data_type = Float
-          elsif n.post_match =~ /boolean/
-            data_type = 'Boolean'
-          elsif n.post_match =~ /dateTime/
-            data_type = DateTime # 時差の計算をしていない
-          elsif n.post_match =~ /integer/
-            data_type = Integer
-          end
-        end
-      elsif value_id == 3 # GeoNames
-        column_name = 'geonames'
-        data_type = String
+
+        data_type = Util.detect_data_type( value_type )
+
+#      elsif value_id == 3 # GeoNames
+#        column_name = 'geonames'
+#        data_type = String
+
       elsif value_id == 1 # Resource
         is_resource = true
       end

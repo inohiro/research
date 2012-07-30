@@ -1,6 +1,8 @@
 require 'rubygems'
 require 'sequel'
+require 'rdf'
 
+USER = ''
 PASSWORD = ''
 
 class Util
@@ -12,7 +14,7 @@ class Util
   #
   def self.connect_db( p )
 
-    user =     p[:user]     || 'root'
+    user =     p[:user]     || USER
     passwd =   p[:password] || PASSWORD
     host =     p[:host]     || 'localhost'
     db =       p[:db]       || 'test2'
@@ -74,4 +76,54 @@ class Util
   def self.valid_http_uri?( uri )
     URI.parse( uri ).scheme == 'http' rescue false
   end
+
+  #
+  #== Util.get_column_name
+  #
+  # estimate column name from predicate (argument)
+  #
+  def self.get_column_name( predicate )
+    m = /\#/.match( predicate )
+    if m != nil
+      m.post_match
+    else
+      n = predicate.reverse.match( /\// )
+      if n != nil
+        n.pre_match.reverse
+      else
+        l = predicate.match( /http:\/\// )
+        if l != nil
+          l.post_match
+        else
+          Time.now.strftime( "unknown_%N" )
+        end
+      end
+    end
+  end
+
+  def self.detect_data_type( uri )
+
+    # xsd data type
+    # http://infohost.nmt.edu/tcc/help/pubs/rnc/xsd.html
+
+    case uri
+    when 'RDF::Literal::String'
+      String
+    when 'RDF::Literal::Boolean'
+      'Boolean'
+    when 'RDF::Literal::Date'
+      Date
+    when 'RDF::Literal::DateTime'
+      DateTime
+    when 'RDF::Literal::Double'
+      Float
+    when 'RDF::Literal::Int', 'RDF::Literal::Integer'
+      Integer
+    when 'RDf::Literal::Time'
+      Time
+    else
+      String
+    end
+  end
+
 end
