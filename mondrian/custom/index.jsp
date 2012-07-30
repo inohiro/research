@@ -20,6 +20,12 @@ analyze very large datasets stored in SQL databases without writing SQL.">
 <link rel="stylesheet" href="stylesheet.css" type="text/css" />
 </head>
 <body>
+<p>inohiro examples:</p>
+<ul>
+  <li><a href="testpage.jsp?query=ra">ra cube</a></li>
+  <li><a href="testpage.jsp?query=mouse">mouse cube</a></li>
+</ul>
+
 <p>Mondrian examples:</p>
 <ul>
 <li><a href="testpage.jsp?query=mondrian">JPivot pivot table</a></li>
