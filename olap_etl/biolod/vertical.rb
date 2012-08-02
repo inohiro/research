@@ -10,8 +10,9 @@ require 'uri'
 
 require './../util.rb'
 
+DATABASE_SCHEMA = 'mouse_mgi_gene'
 URI_TABLE_NAME = :uri_tablename
-BASE_DIR = '/Users/inohiro/Downloads/BioLOD/Protein_Data_Bank/'
+BASE_DIR = '/usr/local/share/data/mouse_mgi_gene/'
 
 @db = nil
 @counter = 0
@@ -58,11 +59,17 @@ def insert( tableid, stm, object_alt, type_id, datatype )
     puts exp.backtrace
   end
 end
+
+
+require 'pp'
+
+@current_stm
+
 def main
-  @db = Util.connect_db( { :db => 'protein' } )
+  @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
   create_uri_tablename # initialize
 
-  Dir.glob( BASE_DIR + "*.n3" ) do |f|
+  Dir.glob( BASE_DIR + "*.nt" ) do |f|
 
     path = "file:" + f.to_s
     puts path
@@ -70,8 +77,18 @@ def main
     tableid = ''
 
     begin
-      graph = RDF::Graph.load( path )
-      graph.each do |stm|
+#      graph = RDF::Graph.load( path )
+#      graph.each do |stm|
+#      RDF::Reader.open( path ) do |reader|
+#      reader = RDF::Reader.for( :n3 ).open( path )
+      reader = RDF::Reader.open( path )
+      reader.each do |stm|
+
+        pp stm
+        gets
+
+        @current_stm = stm
+
         if tmp_subject != stm.subject.to_s # predicate の変わり目
           tmp_subject = stm.subject.to_s
 
@@ -131,11 +148,13 @@ def main
 
       end
     rescue => ex
-      puts 'something error has occured'.upcase
+      puts '=== something error has occured ==='.upcase
+      pp @current_stm
       puts ex.message
       puts ex.backtrace
       puts "COUNTER: #{@counter.to_s}"
-      puts 'processing continue'.upcase
+      gets
+#      puts 'processing continue'.upcase
     end
     puts "COUNTER: #{@counter.to_s}"
     @counter = @counter + 1
