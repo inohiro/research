@@ -91,7 +91,13 @@ def horizontal_explorer( object, column_name, base_table )
       # 取得したレコードのすべてのカラムが、is null or empty でないかのチェックが必要
 
       sampling = @db[current_table].first
-      sampling_domain = URI.parse( sampling[:subject] ).host
+      begin
+        sampling_domain = URI.parse( sampling[:subject] ).host
+      rescue => exp
+        puts "!!! URI parse error !!!"
+        puts sampling[:subject]
+        sampleing_domain = nil
+      end
 
       if sampling_domain == URI.parse( object ).host # pruning with URI's host name
         @db[current_table].select( :subject ).each do |r|
