@@ -74,9 +74,18 @@ def main
                              .filter( [[ :subject, all_subjects ]] )
                              .distinct
 
-    # { :predicate     => "om-owl#samplingTime",
-    #   :value_type    =>"",
-    #   :value_type_id => 1 }
+=begin # for too much WHERE conditions. but too slow...
+    result = []
+    all_subjects.each do |subject|
+      # それぞれの Subject が持つ Predicate を取得し、論理積をとる
+      query = @db[ALL_TRIPLES].select( :predicate, :value_type, :value_type_id )
+                              .filter( :subject => subject )
+
+      query.each do |r|
+        result = result | [r]
+      end
+    end
+=end
 
     table_name = 't' + rdf_type[:id].to_s + '_h'
 
