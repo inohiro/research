@@ -12,9 +12,10 @@ require 'pp'
 
 require './../util.rb'
 
+DATABASE_SCHEMA = 'ARTADE2'
 URI_TABLE_NAME = :uri_tablename
 
-BASE_DIR = '/Users/inohiro/Projects/rdf_rb/'
+BASE_DIR = '/home/inohiro/Data/artade2/artade2/'
 # BASE_DIR = '/home/inohiro/Data/rdf/'
 # BASE_DIR = '/usr/local/share/data/linked_obs_bill/rdf/'
 # BASE_DIR = '/Users/inohiro/Projects/LinkedSensorData/linkedsensordata/'
@@ -68,20 +69,32 @@ def insert( stm, object_alt, type_id, datatype, table_id )
   end
 end
 
+def create_index
+  table_list = @db[:uri_tablename].all
+  table_list.each do |table|
+    table_name = ( 't' + table[:id].to_s ).to_sym
+    puts "Create Index at Table: #{table_name.to_s}"
+    Util.add_index( @db, table_name, [ 'subject', 'predicate', 'object' ] )
+  end
+end
+
 def main
-  @db = Util.connect_db( { :db => 'bill' } )
+  @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
   create_uri_tablename # initialize
 
-  Dir.glob( BASE_DIR + "*.n3" ) do |f|
-
+  Dir.glob( BASE_DIR + "*.xml" ) do |f|
     path = "file:" + f.to_s
     puts "loading...: #{path}"
     tmp_subject =''
     table_id = ''
 
     begin
-      data = StringIO.open( File.read( f.to_s ))
-      reader = RDF::Reader.for( :n3 ).new( data )
+
+      reader = RDF::RDFXML::Reader.open( path )
+
+      # for n3
+#      data = StringIO.open( File.read( f.to_s ))
+#      reader = RDF::Reader.for( :n3 ).new( data )
       reader.each do |stm|
         if tmp_subject != stm.subject.to_s # predicate の変わり目
           tmp_subject = stm.subject.to_s
@@ -154,6 +167,8 @@ def main
     puts "COUNTER: #{@counter.to_s}"
     @counter = @counter + 1
   end
+  
+  create_index
 end
 
 main
