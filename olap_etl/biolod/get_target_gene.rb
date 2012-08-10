@@ -9,6 +9,19 @@ TARGET_GENE = 'http://biolod.org/property/pria227s1i/Target_gene'
 @db
 @src
 
+# def insert_info( table, column, type, is_resource )
+def insert_info
+  begin
+    @db[:horizontal_info].insert( :table_name => 't6_h',
+                                  :attribute_name => 'Target_gene',
+                                  :data_type => String,
+                                  :is_resource => true )
+  rescue => exp
+    puts "!!! unexpected insertion exception !!!".upcase
+    puts exp.message
+  end
+end
+
 def add_column
   begin
     @db.alter_table :t6_h do
@@ -39,6 +52,8 @@ def main
     end
   end
   
+#  insert_info( table, column, type, is_resource )
+  insert_info
 end
 
 main
