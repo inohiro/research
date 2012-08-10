@@ -7,6 +7,7 @@ require 'pp'
 
 require './../util.rb'
 
+DATABASE_SCHEMA = 'ARTADE2'
 @db
 
 # 各 :subject に primary key をつける
@@ -15,7 +16,7 @@ require './../util.rb'
 #  その URI の rdf:type が分かる必要がある（実際には，どのテーブルかわかれば良い）
 
 def create_info_table
-  @db.create_table( :horizontal_infos, { :engine => 'innodb' } ) do
+  @db.create_table!( :horizontal_infos, { :engine => 'innodb' } ) do
     primary_key :id
     String :table_name
     String :attribute_name
@@ -46,9 +47,9 @@ def create_table( tablename, attributes )
           index_columns << a[:name].to_sym
         end
       end
-      index_columns.each do |c|
-        index c
-      end
+#      index_columns.each do |c|
+#        index c
+#      end
     end
   rescue => exp
     puts '!!! unexpected insertion error !!!'.upcase
@@ -61,7 +62,7 @@ def main
   # テーブルごとに :predicate の DISTINCT を取得
   # 名前と，データタイプも得る（列名とデータ型を配列で持つ）
 
-  @db = Util.connect_db
+  @db = Util.connect_db( { :db => DATABASE_SCHEMA } )
   create_info_table
 
   table_list = @db[:uri_tablename].all
@@ -112,12 +113,13 @@ def main
                       :name => column_name,
                       :is_resource => is_resource }
     end
+
     puts table_name
     h_table_name = table_name.to_s + '_h'
     pp attributes
     p '================================='
     create_table( h_table_name.to_sym, attributes )
-    savle_table_info
+    save_table_info( h_table_name, attributes )
   end
 end
 

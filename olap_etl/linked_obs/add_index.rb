@@ -5,11 +5,8 @@ require './../util.rb'
 
 ALL_RDF_TYPES = :all_rdf_types
 ALL_TRIPLES = :all_triples
-DATABASE_SCHEMA = 'mouse_mgi_gene'
 
 @db
-
-require 'pp'
 
 def main( argv )
   if argv.size < 3

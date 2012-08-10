@@ -4,7 +4,7 @@ require 'sequel'
 
 require './../util.rb'
 
-DATABASE_SCHEMA = ''
+DATABASE_SCHEMA = 'ARTADE2'
 @db
 
 def insert( table_name, tuple )
@@ -33,53 +33,55 @@ def main
     puts "Table:   #{table_name.to_s}"
     puts "H-Table: #{h_table_name.to_s}"
 
-    all_subjects = @db[table_name].select( :subject ).distinct
-    all_subjects.each do |e|
-      subject = e[:subject]
+    if @db.table_exists?( h_table_name )
+      all_subjects = @db[table_name].select( :subject ).distinct
+      all_subjects.each do |e|
+        subject = e[:subject]
 
-      # 同一 Subject のレコードの集合
-      records = @db[table_name].filter( :subject => subject )
+        # 同一 Subject のレコードの集合
+        records = @db[table_name].filter( :subject => subject )
+        
+        tuple = Hash.new
+        tuple.store( 'subject', subject )
 
-      tuple = Hash.new
-      tuple.store( 'subject', subject )
+        records.each do |r|
+          column_name = ''
+          data_type = 'string'
+          real_value = nil
 
-      records.each do |r|
-        column_name = ''
-        data_type = 'string'
-        real_value = nil
+          predicate = r[:predicate]
+          object = r[:object]
+          value_type = r[:value_type]
+          value_id = r[:value_type_id].to_i
 
-        predicate = r[:predicate]
-        object = r[:object]
-        value_type = r[:value_type]
-        value_id = r[:value_type_id].to_i
-
-        # データ型によって，キャストが必要（Float, Boolean, integer）
-        if m = /\#/.match( value_type )
-          if m.post_match =~ /float/
-            real_value = object.to_f
-          elsif m.post_match =~ /boolean/
-            real_value = object == 'true' ? true : false
-          elsif m.post_match =~ /integer/
-            real_value =~ /integer/
-            real_value = object.to_i
+          # データ型によって，キャストが必要（Float, Boolean, integer）
+          if m = /\#/.match( value_type )
+            if m.post_match =~ /float/
+              real_value = object.to_f
+            elsif m.post_match =~ /boolean/
+              real_value = object == 'true' ? true : false
+            elsif m.post_match =~ /integer/
+              real_value =~ /integer/
+              real_value = object.to_i
+            else
+              real_value = object
+            end
           else
             real_value = object
           end
-        else
-          real_value = object
-        end
+          
+          column_name = Util.get_column_name( predicate )
 
-        if n = /\#/.match( predicate )
-          column_name = n.post_match
-        end
+          if value_id == 3
+            column_name = 'geonames'
+          end
 
-        if value_id == 3
-          column_name = 'geonames'
+          tuple.store( column_name, real_value )
         end
-
-        tuple.store( column_name, real_value )
+        insert( h_table_name, tuple )
       end
-      insert( h_table_name, tuple )
+    else
+      puts "Table: #{h_table_name.to_s} does not exist."
     end
   end
 end
