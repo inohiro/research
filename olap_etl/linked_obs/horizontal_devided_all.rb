@@ -111,18 +111,14 @@ def detect_attributes
           is_resource = true
         end
 
-        if attributes.any?{ |item| !item[:attributes].empty? && item[:attributes].any?{ |co_item| co_item[:column_name] == column_name} }
-          # already exist => do nothing
-        else
-          attribute = attributes.find { |item| item[:table_name] == h_table_name }
-          attribute[:attributes] << { :type => data_type,
-                                      :column_name => column_name,
-                                      :is_resource => is_resource }
-        end
+        attribute = attributes.find { |item| item[:table_name] == h_table_name }
+        attribute[:attributes] << { :type => data_type,
+                                    :column_name => column_name,
+                                    :is_resource => is_resource }
       end
     end
   end
-  attributes
+  attributes.each { |e| e[:attributes].uniq! }
 end
 
 def main
@@ -130,6 +126,8 @@ def main
   create_info_table
 
   attributes = detect_attributes
+
+  pp attributes
   attributes.each do |attribute|
     table_name = attribute[:table_name].to_sym
     each_attributes = attribute[:attributes]
