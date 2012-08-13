@@ -14,6 +14,8 @@ require './../util.rb'
 @db
 
 TIME_INSTANTS = :time_instants
+TIME_TABLE = :t9_h
+TIME_COLUM = :inXSDDateTime
 
 def parse( time )
   begin
@@ -51,9 +53,9 @@ def main
 
   create_table
 
-  result = @db[:t9_h].all
+  result = @db[TIME_TABLE].all
   result.each do |r|
-    layered_time = parse( r[:inXSDDateTime] )
+    layered_time = parse( r[TIME_COLUMN] )
     layered_time.store( :subject, r[:subject] )
 
     if layered_time.size >= 2

@@ -87,6 +87,18 @@ def main
     end
 =end
 
+=begin # idea 2
+    all_subjects.each do |subject|
+      query = @db[ALL_TRIPLES].filter( :subject => subject )
+      current_rdf_type = nil
+      query.each do |triple|
+        if triple[:predicate] == RDF::type
+          current_rdf_type = triple[:predicate]
+        end
+      end
+    end
+=end
+
     table_name = 't' + rdf_type[:id].to_s + '_h'
 
     attributes = []
