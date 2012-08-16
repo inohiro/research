@@ -28,7 +28,7 @@ def duplicate_data( target_table, tables )
       end
     end
   end
-  puts 'data duplication completed'
+  puts 'data duplication were completed'
 end
 
 def create_table( table_name, attributes )
@@ -51,7 +51,7 @@ def create_table( table_name, attributes )
     puts exp.message
     puts exp.backtrace
   end
-  puts "new table: #{table_name.to_s} are created"
+  puts "new table: #{table_name.to_s} is created"
   index_columns
 end
 
@@ -114,7 +114,7 @@ def main( argv )
       @db = Util.connect_db( { :db => db_name } )
       pp @db
     rescue => exp
-      puts '!!! unexpected create db object error !!!'.upcase
+      puts '!!! unexpected connect db exception !!!'.upcase
       puts exp.message
       return
     end
