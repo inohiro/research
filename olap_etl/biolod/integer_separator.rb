@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# 遺伝子の位置情報（:type=>"http://biolod.org/class/crib185u2i/Mouse_MGI_Gene_Physical_Position"）が持つ
+# Start, End のそれぞれを、桁毎に分解して、テーブルを作り格納し直す
+
 require 'rubygems'
 
 require 'sequel'
