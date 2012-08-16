@@ -7,7 +7,13 @@ require 'pp'
 @src
 @dst
 
-def add_schema_info( table_name, attributes )
+def add_schema_info( table_name, attributes, rdf_type )
+
+  result = @dst[:horizontal_infos].filter( :table_name => table_name.to_s )
+  if result.count >= 1
+    result.delete
+  end
+
   attributes.each do |a|
     begin
       @dst[:horizontal_infos].insert( :table_name => table_name.to_s,
@@ -21,6 +27,20 @@ def add_schema_info( table_name, attributes )
     end
   end
   puts "schema information were added to :horizontal_infos"
+
+  # sampling rdf:type from a resource
+
+  result = @dst[:all_rdf_types].filter( :uri => rdf_type )
+  if result.count < 1
+    begin
+      @dst[:all_rdf_types].insert( :uri => rdf_type )
+    rescue => exp
+      puts "!!! unexpected insertion exception !!!".upcase
+      puts exp.message
+      puts exp.backtrace
+    end
+    puts "rdf type were added to :all_rdf_types"
+  end
 end
 
 def create_table( table_name, attributes )
@@ -38,11 +58,10 @@ def create_table( table_name, attributes )
       end
     end
   rescue => exp
-    puts "!!! unexoected create table exception !!!".upcase
+    puts "!!! unexpected create table exception !!!".upcase
     puts exp.message
     puts exp.backtrace
   end
-  add_schema_info( table_name, attributes )
   puts "new table: #{table_name.to_s} was created"
   index_columns
 end
@@ -98,9 +117,12 @@ def main( argv )
       return
     end
 
+    rdf_type = ( @src[src_table.to_sym].select( :type ).first )[:type]
+
     # src_db からテーブル構造を読み取り、dst_db に作る
     attributes = create_schema( src_table )
     index_columns = create_table( table_name, attributes )
+    add_schema_info( table_name, attributes, rdf_type )
     duplicate_data( src_table, table_name )
     Util.add_index( @dst, table_name, index_columns )
   end

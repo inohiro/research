@@ -7,8 +7,9 @@ require 'uri'
 
 @db
 
-DATABASE_SCHEMA = 'mouse'
+DATABASE_SCHEMA = 'leaf'
 ALL_RDF_TYPES = :all_rdf_types
+URI_TABLE_NAME = :uri_tablename
 URI_TABLE_NAME = ALL_RDF_TYPES
 RELATION_INFOS = :relation_infos
 HORIZONTAL_INFOS = :horizontal_infos
@@ -19,9 +20,10 @@ def recreate_tables_with_relationships
 
   foreign_queue = []
 
-  table_list = @db[URI_TABLE_NAME].all
+  table_list = @db[:horizontal_infos].select( :table_name ).distinct
   table_list.each do |table|
-    table_name = ( 't' + table[:id].to_s + '_h' )
+    table_name = table[:table_name]
+
     puts "Table: #{table_name}"
 
     attributes = @db[HORIZONTAL_INFOS].filter( :table_name => table_name )
@@ -60,13 +62,13 @@ def recreate_tables_with_relationships
     rescue => exp
       puts '!!! unexpected create table error !!!'.upcase
       puts exp.message
-#      puts exp.backtrace
+      puts exp.backtrace
     end
   end
 
   puts 'add foreign key'.upcase
   table_list.each do |table|
-    table_name = ( 'neo_t' + table[:id].to_s + '_h' )
+    table_name = "neo_#{table[:table_name]}"
 
     foreign_queue.each do |q|
       if q[:table_name].to_s == table_name
@@ -81,9 +83,9 @@ end
 
 
 def horizontal_explorer( object, column_name, base_table )
-  table_list = @db[URI_TABLE_NAME].all
+  table_list = @db[:horizontal_infos].select( :table_name ).distinct
   table_list.each do |table|
-    current_table = ( 't' +  table[:id].to_s + '_h'  ).to_sym
+    current_table = table[:table_name].to_sym
 
     if current_table != base_table && @db.table_exists?( current_table ) # pruning with table name
 
@@ -120,12 +122,15 @@ def horizontal_explorer( object, column_name, base_table )
   return nil
 end
 
+require 'pp'
+
 def horizontal_main
   create_table # create table for save relationship informations
 
-  table_list = @db[URI_TABLE_NAME].all
+  table_list = @db[:horizontal_infos].select( :table_name ).distinct
+
   table_list.each do |table|
-    table_name = ( 't' +  table[:id].to_s + '_h' ).to_sym
+    table_name = table[:table_name].to_sym
     puts "Table: #{table_name.to_s}"
 
     if @db.table_exists?( table_name )
