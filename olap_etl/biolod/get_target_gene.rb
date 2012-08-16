@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+# ARTADE2（http://ja.biolod.org/class/cria227s1i/ARTADE2_Gene_Ver.20100511）から、
+# 同一の Tiling Array Analysis Results が持つ Target_gene を抜き出し
+# Tiling Array Analysis Result のインスタンス（今回は Leaf（http://ja.biolod.org/class/cria227s403i/Leaf））で
+# rdf:type => 'http://biolod.org/class/cria227s8i/Tiling_Array_Analysis_Result' のテーブルに追加する
+
 require 'sequel'
 require './../util.rb'
 require 'pp'
