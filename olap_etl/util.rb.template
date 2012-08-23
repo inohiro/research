@@ -107,22 +107,42 @@ class Util
     # http://infohost.nmt.edu/tcc/help/pubs/rnc/xsd.html
 
     case uri
-    when 'RDF::Literal::String'
+    when 'RDF::Literal::String', 'String'
       String
-    when 'RDF::Literal::Boolean'
+    when 'RDF::Literal::Boolean', 'Boolean'
       'Boolean'
-    when 'RDF::Literal::Date'
+    when 'RDF::Literal::Date', 'Date'
       Date
-    when 'RDF::Literal::DateTime'
+    when 'RDF::Literal::DateTime', 'DateTime'
       DateTime
-    when 'RDF::Literal::Double'
+    when 'RDF::Literal::Double', 'Double', 'Float'
       Float
-    when 'RDF::Literal::Int', 'RDF::Literal::Integer'
+    when 'RDF::Literal::Int', 'RDF::Literal::Integer', 'Integer', 'Int'
       Integer
-    when 'RDf::Literal::Time'
+    when 'RDf::Literal::Time', 'Time'
       Time
     else
       String
+    end
+  end
+
+  def self.add_index( db, table_name, column_name )
+    table_name = table_name.to_sym if table_name.class != Symbol
+    begin
+      db.alter_table table_name do
+        if column_name.class == String
+          add_index column_name.to_sym
+        elsif column_name.class == Array
+          column_name.each do |column|
+            add_index column.to_sym
+          end
+        end
+      end
+      puts 'add_index are completed'
+    rescue => exp
+      puts '!!! unexpected alter_table error !!!'.upcase
+      puts exp.message
+      puts exp.backtrace
     end
   end
 
