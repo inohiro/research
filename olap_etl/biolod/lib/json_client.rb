@@ -6,6 +6,7 @@ require 'json'
 module SemanticJson
   class JsonClient
     attr_reader :server_url
+    attr_reader :last_requested_uri
   
     def initialize( server_url )
       @server_url = server_url << '/json'
@@ -14,9 +15,13 @@ module SemanticJson
     def invoke( destination )
       if destination.class == Array
         uri = generate_uri( destination )
-        invoke_by_uri( uri )
+        result = invoke_by_uri( uri )
+#        result['list']
+        result
       elsif destination.class == String
-        invoke_by_uri( destination )
+        result = invoke_by_uri( destination )
+#        result['list']
+        result
       end
     end
 
@@ -26,6 +31,7 @@ module SemanticJson
 
     def invoke_by_uri( json_uri )
 
+      @last_requested_uri = json_uri
       RestClient.proxy = ENV["http_proxy"]
       response = RestClient.get( json_uri )
 
