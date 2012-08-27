@@ -11,6 +11,19 @@ module SemanticJson
       @server_url = server_url << '/json'
     end
 
+    def invoke( destination )
+      if destination.class == Array
+        uri = generate_uri( destination )
+        invoke_by_uri( uri )
+      elsif destination.class == String
+        invoke_by_uri( destination )
+      end
+    end
+
+    #=======================================================
+    private
+    #=======================================================
+
     def invoke_by_uri( json_uri )
 
       RestClient.proxy = ENV["http_proxy"]
@@ -27,19 +40,6 @@ module SemanticJson
 
       json
     end
-
-    def invoke( destination )
-      if destination.class == Array
-        uri = generate_uri( destination )
-        invoke_by_uri( uri )
-      elsif destination.class == String
-        invoke_by_uri( destination )
-      end
-    end
-
-    #=======================================================
-    private
-    #=======================================================
 
     def generate_uri( destination )
       command = destination[0]
