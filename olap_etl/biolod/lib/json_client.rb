@@ -28,16 +28,25 @@ module SemanticJson
       json
     end
 
-    def invoke( command, scines_uri, lang = 'en', option = nil )
-      uri = generate_uri( command, lang, scines_uri, option )
-      invoke_by_uri( uri )
+    def invoke( destination )
+      if destination.class == Array
+        uri = generate_uri( destination )
+        invoke_by_uri( uri )
+      elsif destination.class == String
+        invoke_by_uri( destination )
+      end
     end
 
     #=======================================================
     private
     #=======================================================
 
-    def generate_uri( command, lang, scines_uri, option )
+    def generate_uri( destination )
+      command = destination[0]
+      scines_uri = destination[1]
+      lang = destination[2] || 'en'
+      option = destination[3] || nil
+
       uri = URI.parse( scines_uri )
       
       if uri.scheme == nil
