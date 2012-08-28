@@ -2,6 +2,9 @@
 
 require 'rest-client'
 require 'json'
+require 'rdf'
+
+SCINETS_ITEM = 'http://scinets.org/item/'
 
 module SemanticJson
   class JsonClient
@@ -10,6 +13,7 @@ module SemanticJson
   
     def initialize( server_url )
       @server_url = server_url << '/json'
+      @depth = 0
     end
 
     def invoke( destination )
@@ -25,9 +29,74 @@ module SemanticJson
       end
     end
 
+    def rdf( destination )
+      result = invoke( destination )
+      result = result['list']
+
+      triples = []
+      result.each do |set|
+        triples << create_rdf( set )
+      end
+      triples
+    end
+
+    def recursive_rdf( destination, predicate )
+      list = recursive_invoke( destination, predicate )
+      rdf_list = []
+      list.each { |x| rdf_list << create_rdf( x ) }
+      rdf_list
+    end
+
+    def recursive_invoke( destination, predicate )
+      result = invoke( destination )
+      if result.class == Array || result.class == Hash
+        result = result['list']
+      end
+
+      triples = []
+      result.each do |set|
+        set_predicate = set['property']['ID']
+        name = get_name( set_predicate )
+        if name == predicate
+          # rdf = create_rdf( set ); triples << set # it doesn't work correctly :(
+          triples << set
+          triples << recursive_invoke( [ 'statements', set['object']['ID'] ], predicate )
+        end
+      end
+      triples.flatten.reverse
+    end
+
+    def get_name( scines_id )
+      result = invoke( [ 'name', scines_id ] )
+      result['name']
+    end
+
+    def get_data_type( scines_id )
+      result = invoke( [ 'type', scines_id ] )
+      result['list'].first['type']
+    end
+
     #=======================================================
     private
     #=======================================================
+
+    def create_rdf( set )
+      rdf = RDF::Statement.new
+      rdf.subject = SCINETS_ITEM + set['subject']['ID']
+      rdf.predicate = SCINETS_ITEM + set['property']['ID']
+      rdf.object = SCINETS_ITEM + set['object']['ID']
+
+      object_data_type = set['object']['dataType']
+
+      if object_data_type != 'Instance'
+        puts object_data_type
+        data_type = get_data_type( set['object']['ID'] )
+        name = get_name( data_type )
+        puts name
+      end
+      
+      rdf
+    end
 
     def invoke_by_uri( json_uri )
 
