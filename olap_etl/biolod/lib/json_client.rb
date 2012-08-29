@@ -71,7 +71,7 @@ module SemanticJson
       result['name']
     end
 
-    def get_data_type( scines_id )
+    def get_type( scines_id )
       result = invoke( [ 'type', scines_id ] )
       result['list'].first['type']
     end
@@ -90,8 +90,8 @@ module SemanticJson
 
       if object_data_type != 'Instance'
         puts object_data_type
-        data_type = get_data_type( set['object']['ID'] )
-        name = get_name( data_type )
+        type = get_type( set['object']['ID'] )
+        name = get_name( type )
         puts name
       end
       
