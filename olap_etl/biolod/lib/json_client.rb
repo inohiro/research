@@ -16,26 +16,15 @@ module SemanticJson
       @depth = 0
     end
 
-    def invoke( destination )
-      if destination.class == Array
-        uri = generate_uri( destination )
-        result = invoke_by_uri( uri )
-#        result['list']
-        result
-      elsif destination.class == String
-        result = invoke_by_uri( destination )
-#        result['list']
-        result
-      end
-    end
-
-    def rdf( destination )
-      result = invoke( destination )
+    def rdf( method, scinets_id )
+      result = invoke( [ method, scinets_id ] )
       result = result['list']
 
       triples = []
       result.each do |set|
-        triples << create_rdf( set )
+        create_rdf( set ).each do |triple|
+          triples << triple
+        end
       end
       triples
     end
@@ -56,7 +45,7 @@ module SemanticJson
       triples = []
       result.each do |set|
         set_predicate = set['property']['ID']
-        name = get_name( set_predicate )
+        name = get( 'name', set_predicate )
         if name == predicate
           # rdf = create_rdf( set ); triples << set # it doesn't work correctly :(
           triples << set
@@ -66,35 +55,74 @@ module SemanticJson
       triples.flatten.reverse
     end
 
-    def get_name( scines_id )
-      result = invoke( [ 'name', scines_id ] )
-      result['name']
-    end
+    def get( method, scinets_id )
+      result = invoke( [ method, scinets_id ] )
 
-    def get_type( scines_id )
-      result = invoke( [ 'type', scines_id ] )
-      result['list'].first['type']
+#      result.key? 'list' ? result['list'].first[method] : result[method] # balky :(
+
+      if result.key? 'list'
+        if result['list'].first.key? method
+          result['list'].first[method]
+        else
+          result['list'].first
+        end
+      else
+        result[method]
+      end
     end
 
     #=======================================================
     private
     #=======================================================
 
-    def create_rdf( set )
-      rdf = RDF::Statement.new
-      rdf.subject = SCINETS_ITEM + set['subject']['ID']
-      rdf.predicate = SCINETS_ITEM + set['property']['ID']
-      rdf.object = SCINETS_ITEM + set['object']['ID']
-
-      object_data_type = set['object']['dataType']
-
-      if object_data_type != 'Instance'
-        puts object_data_type
-        type = get_type( set['object']['ID'] )
-        name = get_name( type )
-        puts name
+    def invoke( destination )
+      if destination.class == Array
+        uri = generate_uri( destination )
+        result = invoke_by_uri( uri )
+#        result['list']
+        result
+      elsif destination.class == String # URI
+        result = invoke_by_uri( destination )
+#        result['list']
+        result
       end
-      
+    end
+
+    def create_rdf( set )
+
+      list = []
+
+      subject = set['subject']['ID']
+      predicate = set['property']['ID']
+      object = set['object']
+
+      if object.class == Array && object.size >= 2
+        object.each do |obj|
+          list << build_triple( subject, predicate, obj )
+        end
+#      elsif object.class == Array && object.size == 2
+#        pp object
+#        pp object[0] === object[1]
+#        STDIN.gets
+      else
+        list << build_triple( subject, predicate, object )
+      end
+
+      list
+    end
+
+    def build_triple( subject, predicate, object )
+      rdf = RDF::Statement.new
+      rdf.subject = SCINETS_ITEM + subject
+      rdf.predicate = SCINETS_ITEM + predicate
+
+      if object.key? 'value'
+        literal = RDF::Literal.new( object['value'], :datatype => object['literalDataType'] || 'xsd:string' )
+        rdf.object = literal
+      else
+        rdf.object = SCINETS_ITEM + object['ID']
+      end
+
       rdf
     end
 
@@ -114,6 +142,21 @@ module SemanticJson
       end
 
       json
+    end
+
+    def get_name( scinets_id )
+      result = invoke( [ 'name', scinets_id ] )
+      result['name']
+    end
+
+    def get_type( scinets_id )
+      result = invoke( [ 'type', scinets_id ] )
+      result['list'].first['type']
+    end
+
+    def get_label( scinets_id )
+      result = invoke( [ 'label', scinets_id ] )
+      result['label']
     end
 
     def generate_uri( destination )

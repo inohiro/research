@@ -18,22 +18,32 @@ def main( argv )
 #  result = client.invoke( [ 'statements', 'crib166u26rib166u3702i' ] )
 
 #  result = client.invoke( %w( statements crib166u26rib166u3702i) )
-  result = client.invoke( [ method, scinets_id ])
+#  result = client.invoke( [ method, scinets_id ])
+  result = client.get( 'statements', scinets_id )
 
+#  pp result
 
-  if result.class == Array || result.class == Hash
-    result = result['list']
-  end
+=begin
+  label = client.get( 'label', scinets_id )
+  puts "label: #{label.to_s}"
+  type = client.get( 'type', scinets_id )
+  puts "type: #{type.to_s}"
+=end
+
+#  if result.class == Array || result.class == Hash
+#    result = result['list']
+#  end
 
 #  rdf = RDF::JSON::Reader.new( JSON.generate( list ) )
 
   result.each do |stm|
-    pp stm
-    p '==========================='
+#    pp stm
+#    p '==========================='
   end
 
 
-  triples = client.rdf( [ method, scinets_id ] )
+  triples = client.rdf( method, scinets_id )
+#  pp triples
   
   puts "requested: #{client.last_requested_uri}"
 
@@ -41,17 +51,16 @@ def main( argv )
     pp triple
   end
 
-  rec_triples = client.recursive_invoke( [ method, scinets_id ], 'parent node' )
+#  rec_triples = client.recursive_invoke( [ method, scinets_id ], 'parent node' )
+#  rec_triples = client.recursive_invoke( [ method, scinets_id ], 'belong_to' )
 #  pp rec_triples
 
-  rec_triples.each do |triple|
-    puts client.get_name( triple['subject']['ID'] )
-  end
-
+#  rec_triples.each do |triple|
+#    puts client.get_name( triple['subject']['ID'] )
+#  end
 
 #  rec_rdf = client.recursive_rdf( [method, scinets_id], 'parent node' )
 #  pp rec_rdf
-  
 
   # AT5G62480.1
 
