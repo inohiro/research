@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Schema name="ar">
+  <Cube name="results">
+    <Table name="all_result" />
+<!--    <Table name="neo_t7_h" /> -->
+<!--    <Table name="neo_t11_h" /> -->
+
+    <Dimension name="sample" foreignKey="experiment_tissue">
+      <Hierarchy hasAll="true" primaryKey="subject" allMemberName="AllSample">
+	<Table name="t9_h" />
+	<Level name="label" column="label" uniqueMember="true" />
+      </Hierarchy>
+    </Dimension>
+
+    <Dimension name="treatment" foreignKey="experiment_stress">
+      <Hierarchy hasAll="true" primaryKey="subject" allMemberName="AllTreatment">
+	<Table name="t8_h" />
+	<Level name="label" column="label" uniqueMember="true" />
+      </Hierarchy>
+    </Dimension>
+
+    <Measure name="value" column="Median" aggregator="avg" formatString="###.######" />
+  </Cube>
+</Schema>
