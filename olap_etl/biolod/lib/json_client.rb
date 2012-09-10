@@ -10,7 +10,7 @@ module SemanticJson
   class JsonClient
     attr_reader :server_url
     attr_reader :last_requested_uri
-  
+
     def initialize( server_url )
       @server_url = server_url << '/json'
       @depth = 0
@@ -29,15 +29,15 @@ module SemanticJson
       triples
     end
 
-    def recursive_rdf( destination, predicate )
-      list = recursive_invoke( destination, predicate )
+    def recursive_rdf( destination, predicate, option = { } )
+      list = recursive_invoke( destination, predicate, option )
       rdf_list = []
       list.each { |x| rdf_list << create_rdf( x ) }
       rdf_list
     end
 
-    def recursive_invoke( destination, predicate )
-      result = invoke( destination )
+    def recursive_invoke( destination, predicate, option = { } )
+      result = invoke( destination, option )
       if result.class == Array || result.class == Hash
         result = result['list']
       end
@@ -45,18 +45,18 @@ module SemanticJson
       triples = []
       result.each do |set|
         set_predicate = set['property']['ID']
-        name = get( 'name', set_predicate )
+        name = get( 'name', set_predicate, option )
         if name == predicate
           # rdf = create_rdf( set ); triples << set # it doesn't work correctly :(
           triples << set
-          triples << recursive_invoke( [ 'statements', set['object']['ID'] ], predicate )
+          triples << recursive_invoke( [ 'statements', set['object']['ID'] ], predicate, option )
         end
       end
-      triples.flatten.reverse
+      triples.flatten
     end
 
-    def get( method, scinets_id )
-      result = invoke( [ method, scinets_id ] )
+    def get( method, scinets_id, option = { } )
+      result = invoke( [ method, scinets_id ], option )
 
 #      result.key? 'list' ? result['list'].first[method] : result[method] # balky :(
 
@@ -75,14 +75,14 @@ module SemanticJson
     private
     #=======================================================
 
-    def invoke( destination )
+    def invoke( destination, option = { } )
       if destination.class == Array
-        uri = generate_uri( destination )
+        uri = generate_uri( destination, option )
         result = invoke_by_uri( uri )
 #        result['list']
         result
       elsif destination.class == String # URI
-        result = invoke_by_uri( destination )
+        result = invoke_by_uri( destination, option )
 #        result['list']
         result
       end
@@ -126,22 +126,24 @@ module SemanticJson
       rdf
     end
 
-    def invoke_by_uri( json_uri )
+    def invoke_by_uri( json_uri, option = { } )
 
       @last_requested_uri = json_uri
       RestClient.proxy = ENV["http_proxy"]
       response = RestClient.get( json_uri )
 
-      if response.code == 200
+      case response.code
+      when 200
         begin
           json = JSON.parse( response.to_str )
         rescue => exp
           puts exp.message
           puts exp.backtrace
         end
+        json
+      when 500
+        nil
       end
-
-      json
     end
 
     def get_name( scinets_id )
@@ -159,14 +161,14 @@ module SemanticJson
       result['label']
     end
 
-    def generate_uri( destination )
+    def generate_uri( destination, option = { } )
       command = destination[0]
       scines_uri = destination[1]
-      lang = destination[2] || 'en'
+      lang = option[:lang] || 'en' # lang = destination[2] || 'en'
       option = destination[3] || nil
 
       uri = URI.parse( scines_uri )
-      
+
       if uri.scheme == nil
         scines_id = scines_uri
       else
