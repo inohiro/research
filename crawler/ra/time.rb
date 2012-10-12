@@ -17,14 +17,9 @@ TIME = "http://purl.org/NET/c4dm/event.owl#time"
 #
 def main
 
-  unless File.exists?( INPUT_DIR )
-    return 1
-  end
-
-  unless File.exists?( TIME_DIR )
-    Dir.mkdir( TIME_DIR )
-  end
-
+  return 1 unless File.exists?( INPUT_DIR )
+  Dir.mkdir( TIME_DIR ) unless File.exists?( TIME_DIR )
+ 
   i = 1
   j = 1
 

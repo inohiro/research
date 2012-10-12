@@ -14,9 +14,7 @@ BASE_URL = 'http://www.kanzaki.com/works/2011/stat/ra/'
 #
 def main
 
-  unless File.exists?( OUTPUT_DIR )
-    Dir::mkdir( OUTPUT_DIR )
-  end
+  DIR.mkdir( OUTPUT_DIR ) unless File.exists?( OUTPUT_DIR )
 
   ( 3..12 ).each do |m| # month
     span = ( 1..31 )
