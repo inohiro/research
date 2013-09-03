@@ -31,37 +31,92 @@ RDF_PATH = "/Users/inohiro/Documents/linked_sensor_data_rdf"
 #   'type2' => {},
 # }
 
-def main
-  tpts = Hash.new { |type, key| hash[key] = Hash.new { |subject, name| subject[name] = Array.new } }
+#
+# == Prevent inserting duplicated predicate (property table)
+# === remove object also
+#
+# subject_reduced_tpts = {
+#   'type1' => [
+#     [ 'predicate', 'object_datatype' ],
+#     [ 'predicate', 'object_datatype' ],
+#   ],
+#   'type2' => [
+#     [ 'predicate', 'object_datatype' ],
+#     [ 'predicate', 'object_datatype' ],
+#   ]
+# }
 
-  # iterate XML files
-  Dir.glob( File.join( RDF_PATH, '*.n3' ) ) do |file| # TODO: generalize
-    puts file
-    RDF::N3::Reader.open( file ) do |reader|          # TODO: generalize
-      current_rdf_type = nil
-      
-      reader.each_statement do |statement|
-        current_rdf_type = statement.object.to_s if statement.predicate == RDF.type
-
-        # object's datatype detection
-        if statement.object.class <= RDF::Literal # Literal
-          if statement.object.has_datatype?
-            datatype = statement.object.datatype
-          else
-            # TODO: find datatpe
-            datatype = 'RDF::Literal::String'
-          end
-        elsif statement.object.class == RDF::URI # Resource
-          # look up next resource
-          datatype = RDF::URI
-        end
-
-        tpts.store( current_rdf_type, { statement.subject.to_s => Array.new } ) unless tpts.key? current_rdf_type # fix
-        tpts[current_rdf_type].store( statement.subject.to_s, Array.new ) unless tpts[current_rdf_type].key? statement.subject.to_s # fix
-        tpts[current_rdf_type][statement.subject.to_s] << [ statement.predicate.to_s, statement.object.to_s, datatype ]
-      end
-    end
+require 'yaml'
+def output_tpts( tpts = {}, path = File.expand_path( './result.tpts.yml' ) )
+  File.open( path, 'w' ) do |file|
+    file.write( tpts.to_yaml )
   end
 end
 
-main
+def subject_reduced_tpts
+  tpts = Hash.new { |type, key| type[key] = Array.new }
+
+  Dir.glob( File.join( RDF_PATH, '*.n3' ) ) do |file| # TODO: generalize
+    RDF::N3::Reader.open( file ) do |reader|          # TODO: generalize
+      current_rdf_type = nil
+
+      reader.each_statement do |stm|
+        current_rdf_type = stm.object.to_s if stm.predicate == RDF.type
+        datatype = detect_datatype( stm )
+        predicate = stm.predicate.to_s
+
+        tpts.store( current_rdf_type, Array.new ) unless tpts.key? current_rdf_type
+        predicates = tpts[current_rdf_type].map { |record| record[0] }
+
+        # TODO: frequency counting
+        tpts[current_rdf_type] << [ predicate, datatype ] unless predicates.index predicate
+      end
+    end
+  end
+  output_tpts( tpts, File.expand_path( './subject_reduced.tpts.yml' ) )
+end
+
+def store_as_tpts
+  tpts = Hash.new { |type, key| type[key] = Hash.new { |subject, name| subject[name] = Array.new } }
+
+  # iterate XML files
+  Dir.glob( File.join( RDF_PATH, '*.n3' ) ) do |file| # TODO: generalize
+    # puts file
+    RDF::N3::Reader.open( file ) do |reader|          # TODO: generalize
+      current_rdf_type = nil
+
+      reader.each_statement do |stm|
+        current_rdf_type = stm.object.to_s if stm.predicate == RDF.type
+        datatype = detect_datatype( stm )
+        subject = stm.subject.to_s
+        predicate = stm.predicate.to_s
+        object = stm.object.to_s
+
+        tpts.store( current_rdf_type, { subject => Array.new } ) unless tpts.key? current_rdf_type
+        tpts[current_rdf_type].store( subject, Array.new ) unless tpts[current_rdf_type].key? subject
+        tpts[current_rdf_type][subject] << [ predicate, object, datatype.to_s ]
+      end
+    end
+  end
+  output_tpts( tpts )
+end
+
+def detect_datatype( stm )
+  # object's datatype detection
+  if stm.object.class <= RDF::Literal # Literal
+    if stm.object.has_datatype?
+      datatype = stm.object.datatype.to_s
+    else
+      # TODO: find datatpe
+      datatype = 'RDF::Literal::String'
+    end
+  elsif stm.object.class == RDF::URI # Resource
+    # look up next resource
+    datatype = "RDF::URI"
+  end
+  datatype
+end
+
+# store_as_tpts
+subject_reduced_tpts
+
